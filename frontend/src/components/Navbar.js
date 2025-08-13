@@ -148,22 +148,30 @@ const Navbar = () => {
                   <Home className="side-menu-icon" />
                   Home
                 </Link>
-                <Link to="/create-auction" className="side-menu-link" onClick={closeSideMenu}>
+                {/* <Link to="/create-auction" className="side-menu-link" onClick={closeSideMenu}>
                   <Plus className="side-menu-icon" />
                   Create Auction
                 </Link>
                 <Link to="/bid" className="side-menu-link" onClick={closeSideMenu}>
                   <Hammer className="side-menu-icon" />
                   Bid
-                </Link>
+                </Link> */}
                 <Link to="/profile" className="side-menu-link" onClick={closeSideMenu}>
                   <UserCircle className="side-menu-icon" />
                   Profile
                 </Link>
-                <Link to="/contact" className="side-menu-link" onClick={closeSideMenu}>
-                  <MessageCircle className="side-menu-icon" />
-                  Contact
-                </Link>
+                  <Link to="/my-auctions" className="side-menu-link" onClick={closeSideMenu}>
+                    <Gavel className="side-menu-icon" />
+                    My Auctions
+                  </Link>
+                  <Link to="/my-bids" className="side-menu-link" onClick={closeSideMenu}>
+                    <Search className="side-menu-icon" />
+                    My Bids
+                  </Link>
+                  <Link to="/my-contacts" className="side-menu-link" onClick={closeSideMenu}>
+                    <MessageCircle className="side-menu-icon" />
+                    My Contacts
+                  </Link>
               </nav>
               
               <button className="side-menu-logout" onClick={handleLogout}>

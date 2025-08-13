@@ -95,7 +95,7 @@ const Home = () => {
               <Search className="search-icon" />
               <input
                 type="text"
-                placeholder="Search for auctions..."
+                placeholder="Search for auctions with titles..."
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
                 className="search-input"

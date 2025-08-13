@@ -18,6 +18,9 @@ import AuctionDetails from './pages/AuctionDetails';
 import CreateAuction from './pages/CreateAuction';
 import Bid from './pages/Bid';
 import Profile from './pages/Profile';
+import MyAuctions from './pages/MyAuctions.jsx';
+import MyBids from './pages/MyBids.jsx';
+import MyContacts from './pages/MyContacts.jsx';
 
 // Utils
 import { AuthProvider } from './utils/AuthContext';
@@ -42,6 +45,9 @@ function App() {
               <Route path="/create-auction" element={<CreateAuction />} />
               <Route path="/bid" element={<Bid />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/my-auctions" element={<MyAuctions />} />
+              <Route path="/my-bids" element={<MyBids />} />
+              <Route path="/my-contacts" element={<MyContacts />} />
             </Routes>
           </main>
           <Footer />

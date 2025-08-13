@@ -10,6 +10,27 @@ const { auth } = require('../middleware/auth');
 
 const router = express.Router();
 
+
+// Test email and SMS sending
+router.post('/test-send', async (req, res) => {
+  const { email, phone, name } = req.body;
+  const testEmailOTP = Math.floor(100000 + Math.random() * 900000).toString();
+  const testPhoneOTP = Math.floor(100000 + Math.random() * 900000).toString();
+  try {
+    const emailResult = await require('../utils/email').sendVerificationEmail(email, testEmailOTP, name || 'Test User');
+    const smsResult = await require('../utils/sms').sendSMSOTP(phone, testPhoneOTP);
+    res.json({
+      message: 'Test email and SMS sent',
+      emailResult,
+      smsResult,
+      testEmailOTP,
+      testPhoneOTP
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Test send failed', error: error.message });
+  }
+});
+
 // Register user
 router.post('/register', upload.single('profileImg'), [
   body('fullName').trim().isLength({ min: 2, max: 50 }).withMessage('Full name must be between 2 and 50 characters'),
