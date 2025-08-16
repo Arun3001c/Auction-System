@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { ArrowLeft, User, Clock, DollarSign, Gavel, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../utils/AuthContext';
 import api from '../utils/api';
-
+// import './AuctionDetails.css'; // Assuming you have a CSS file for styling
 const AuctionDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -110,7 +110,7 @@ const AuctionDetails = () => {
     }
   };
 
-  const isOwner = user && auction && auction.seller._id === user.id;
+  const isOwner = user && auction && auction.seller._id === user._id;
   const isHighestBidder = user && auction && auction.currentHighestBidder?._id === user.id;
 
   if (loading) {
@@ -214,13 +214,7 @@ const AuctionDetails = () => {
                 <span className="seller-name">{auction.seller.fullName}</span>
               </div>
             </div>
-            <Link
-              to={`/auction/${auction._id}/bid`}
-              className="add-auction-btn"
-              style={{ marginTop: '1rem', display: 'inline-block', width: 'fit-content' }}
-            >
-              Go to Bidding Page
-            </Link>
+            
           </div>
         </div>
 
@@ -229,6 +223,24 @@ const AuctionDetails = () => {
           <h2>Description</h2>
           <p>{auction.description}</p>
         </div>
+        {/* Conditional rendering for bidding/participation button */}
+        {isOwner ? (
+          <button
+            className="add-auction-btn"
+            style={{ marginTop: '1rem', display: 'inline-block', width: 'fit-content' }}
+            onClick={() => navigate(`/auction/${auction._id}/bid`)}
+          >
+            Go to Bidding Page
+          </button>
+        ) : (
+          <button
+            className="add-auction-btn"
+            style={{ marginTop: '1rem', display: 'inline-block', width: 'fit-content' }}
+            onClick={() => navigate(`/auction/${auction._id}/bid`)}
+          >
+            Participate in Auction
+          </button>
+        )}
 
         {/* Bid History */}
         {auction.bids && auction.bids.length > 0 && (

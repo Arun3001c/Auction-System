@@ -106,6 +106,13 @@ const auctionSchema = new mongoose.Schema({
   featured: {
     type: Boolean,
     default: false
+  },
+  participationCode: {
+    type: String,
+    required: false,
+    unique: true,
+    trim: true,
+    default: '-'
   }
 }, {
   timestamps: true

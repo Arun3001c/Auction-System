@@ -372,11 +372,13 @@ router.post('/', auth, upload.fields([
       reservePrice,
       minimumPrice,
       startDate,
-      endDate
+      endDate,
+      currency,
+      participationCode
     } = req.body;
 
     // Validate required fields
-    if (!auctionId || !title || !description || !category || !auctionType || !startingPrice || !startDate || !endDate) {
+    if (!auctionId || !title || !description || !category || !auctionType || !startingPrice || !startDate || !endDate || !currency || !participationCode) {
       return res.status(400).json({ message: 'All required fields must be provided' });
     }
 
@@ -384,6 +386,12 @@ router.post('/', auth, upload.fields([
     const existingAuction = await Auction.findOne({ auctionId });
     if (existingAuction) {
       return res.status(400).json({ message: 'Auction ID already exists' });
+    }
+
+    // Check if participation code already exists
+    const existingCode = await Auction.findOne({ participationCode });
+    if (existingCode) {
+      return res.status(400).json({ message: 'Participation code already exists' });
     }
 
     // Validate images
@@ -420,7 +428,9 @@ router.post('/', auth, upload.fields([
       startingPrice: parseFloat(startingPrice),
       startDate: start,
       endDate: end,
-      seller: req.user._id
+      seller: req.user._id,
+      currency,
+      participationCode
     };
 
     // Add auction type specific fields

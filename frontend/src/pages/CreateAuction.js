@@ -91,6 +91,13 @@ const CreateAuction = () => {
     return `AUC-${timestamp}-${randomStr}`.toUpperCase();
   };
 
+  // Generate random participation code (6 digits)
+  const [participationCode, setParticipationCode] = useState('');
+  const generateParticipationCode = () => {
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    setParticipationCode(code);
+  };
+
   const onSubmit = async (data) => {
     try {
       if (images.length === 0) {
@@ -98,12 +105,19 @@ const CreateAuction = () => {
         return;
       }
 
+      if (!participationCode) {
+        toast.error('Please generate a participation code');
+        return;
+      }
+
       const formData = new FormData();
-      
       // Generate auction ID
       const auctionId = generateAuctionId();
       formData.append('auctionId', auctionId);
-      
+
+      // Use generated participation code
+      formData.append('participationCode', participationCode);
+
       // Add form data
       Object.keys(data).forEach(key => {
         formData.append(key, data[key]);
@@ -125,7 +139,7 @@ const CreateAuction = () => {
         },
       });
 
-      toast.success('Auction created successfully!');
+      toast.success(`Auction created! Participation Code: ${participationCode}`);
       navigate(`/auction/${response.data.auction._id}`);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create auction');
@@ -297,6 +311,51 @@ const CreateAuction = () => {
                   {errors.startingPrice && <span className="error-message">{errors.startingPrice.message}</span>}
                 </div>
 
+                <div className="form-group">
+                  <label className="form-label">
+                    Currency *
+                  </label>
+                  <select
+                    className="form-select"
+                    {...register('currency', { required: 'Currency is required' })}
+                  >
+                    <option value="">Select currency</option>
+                    <option value="USD">USD - US Dollar</option>
+                    <option value="EUR">EUR - Euro</option>
+                    <option value="INR">INR - Indian Rupee</option>
+                    <option value="GBP">GBP - British Pound</option>
+                    <option value="JPY">JPY - Japanese Yen</option>
+                    <option value="CNY">CNY - Chinese Yuan</option>
+                    <option value="CAD">CAD - Canadian Dollar</option>
+                    <option value="AUD">AUD - Australian Dollar</option>
+                    <option value="CHF">CHF - Swiss Franc</option>
+                    <option value="SGD">SGD - Singapore Dollar</option>
+                    <option value="NZD">NZD - New Zealand Dollar</option>
+                    <option value="ZAR">ZAR - South African Rand</option>
+                    <option value="BRL">BRL - Brazilian Real</option>
+                    <option value="RUB">RUB - Russian Ruble</option>
+                    <option value="KRW">KRW - South Korean Won</option>
+                    <option value="HKD">HKD - Hong Kong Dollar</option>
+                    <option value="MXN">MXN - Mexican Peso</option>
+                    <option value="SEK">SEK - Swedish Krona</option>
+                    <option value="NOK">NOK - Norwegian Krone</option>
+                    <option value="TRY">TRY - Turkish Lira</option>
+                    <option value="SAR">SAR - Saudi Riyal</option>
+                    <option value="AED">AED - UAE Dirham</option>
+                    <option value="PLN">PLN - Polish Zloty</option>
+                    <option value="THB">THB - Thai Baht</option>
+                    <option value="IDR">IDR - Indonesian Rupiah</option>
+                    <option value="MYR">MYR - Malaysian Ringgit</option>
+                    <option value="PHP">PHP - Philippine Peso</option>
+                    <option value="VND">VND - Vietnamese Dong</option>
+                    <option value="EGP">EGP - Egyptian Pound</option>
+                    <option value="PKR">PKR - Pakistani Rupee</option>
+                    <option value="BDT">BDT - Bangladeshi Taka</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  {errors.currency && <span className="error-message">{errors.currency.message}</span>}
+                </div>
+
                 {watchAuctionType === 'sealed' && (
                   <div className="form-group">
                     <label className="form-label">
@@ -338,6 +397,24 @@ const CreateAuction = () => {
                     {errors.minimumPrice && <span className="error-message">{errors.minimumPrice.message}</span>}
                   </div>
                 )}
+              </div>
+              {/* Participation Code Display with Generate Button */}
+              <div className="form-group">
+                <label className="form-label">Auction Participation Code</label>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={participationCode}
+                    readOnly
+                    placeholder="Click Generate"
+                    style={{ width: '180px' }}
+                  />
+                  <button type="button" className="btn btn-secondary" onClick={generateParticipationCode}>
+                    Generate
+                  </button>
+                </div>
+                <small className="form-hint">Click 'Generate' to get your participation code for joining the auction.</small>
               </div>
             </div>
 

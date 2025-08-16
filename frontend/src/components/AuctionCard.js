@@ -1,12 +1,53 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, Clock, DollarSign } from 'lucide-react';
+import { Eye, Clock, DollarSign, Hash, Gavel } from 'lucide-react';
 
 const AuctionCard = ({ auction }) => {
+  // Map currency code to locale and symbol
+  const currencyLocaleMap = {
+    USD: { locale: 'en-US', symbol: '$' },
+    EUR: { locale: 'de-DE', symbol: '€' },
+    INR: { locale: 'en-IN', symbol: '₹' },
+    GBP: { locale: 'en-GB', symbol: '£' },
+    JPY: { locale: 'ja-JP', symbol: '¥' },
+    CNY: { locale: 'zh-CN', symbol: '¥' },
+    CAD: { locale: 'en-CA', symbol: '$' },
+    AUD: { locale: 'en-AU', symbol: '$' },
+    CHF: { locale: 'de-CH', symbol: 'CHF' },
+    SGD: { locale: 'en-SG', symbol: '$' },
+    NZD: { locale: 'en-NZ', symbol: '$' },
+    ZAR: { locale: 'en-ZA', symbol: 'R' },
+    BRL: { locale: 'pt-BR', symbol: 'R$' },
+    RUB: { locale: 'ru-RU', symbol: '₽' },
+    KRW: { locale: 'ko-KR', symbol: '₩' },
+    HKD: { locale: 'zh-HK', symbol: 'HK$' },
+    MXN: { locale: 'es-MX', symbol: '$' },
+    SEK: { locale: 'sv-SE', symbol: 'kr' },
+    NOK: { locale: 'nb-NO', symbol: 'kr' },
+    TRY: { locale: 'tr-TR', symbol: '₺' },
+    SAR: { locale: 'ar-SA', symbol: '﷼' },
+    AED: { locale: 'ar-AE', symbol: 'د.إ' },
+    PLN: { locale: 'pl-PL', symbol: 'zł' },
+    THB: { locale: 'th-TH', symbol: '฿' },
+    IDR: { locale: 'id-ID', symbol: 'Rp' },
+    MYR: { locale: 'ms-MY', symbol: 'RM' },
+    PHP: { locale: 'en-PH', symbol: '₱' },
+    VND: { locale: 'vi-VN', symbol: '₫' },
+    EGP: { locale: 'ar-EG', symbol: 'ج.م' },
+    PKR: { locale: 'en-PK', symbol: '₨' },
+    BDT: { locale: 'bn-BD', symbol: '৳' },
+    Other: { locale: 'en-US', symbol: '' }
+  };
+const getCurrencyInfo = (currency) => currencyLocaleMap[currency] || { locale: 'en-US', symbol: '' };
+
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('en-US', {
+    const { locale, symbol } = getCurrencyInfo(auction.currency);
+    if (!auction.currency || auction.currency === 'Other') {
+      return `${symbol}${price}`;
+    }
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
-      currency: 'USD'
+      currency: auction.currency
     }).format(price);
   };
 
@@ -24,9 +65,11 @@ const AuctionCard = ({ auction }) => {
     if (!target || isNaN(target.getTime())) return 'Unknown';
     const diff = target - now;
     if (diff <= 0) return auction.status === 'upcoming' ? 'Started' : 'Ended';
+    
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
     if (days > 0) return `${label} ${days}d ${hours}h`;
     if (hours > 0) return `${label} ${hours}h ${minutes}m`;
     return `${label} ${minutes}m`;
@@ -34,14 +77,10 @@ const AuctionCard = ({ auction }) => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'active':
-        return 'status-active';
-      case 'upcoming':
-        return 'status-upcoming';
-      case 'ended':
-        return 'status-ended';
-      default:
-        return 'status-default';
+      case 'active': return 'status-active';
+      case 'upcoming': return 'status-upcoming';
+      case 'ended': return 'status-ended';
+      default: return 'status-default';
     }
   };
 
@@ -68,29 +107,52 @@ const AuctionCard = ({ auction }) => {
 
       <div className="auction-content">
         <h3 className="auction-title">{auction.title}</h3>
-        <p className="auction-category">{auction.category}</p>
-        
+        {/* <div className='auction-meta'>
+         <p className="auction-category">{auction.category}</p>
+        <span className="bid-count">{auction.bids?.length || 0} bids</span>
+        </div> */}
+
         <div className="auction-stats">
           <div className="stat-item">
-            <DollarSign className="stat-icon" />
-            <div className="stat-content">
-              <span className="stat-label">Current Bid</span>
-              <span className="stat-value">{formatPrice(auction.currentBid)}</span>
-            </div>
+            <span className="stat-label">
+              {/* <DollarSign className="stat-icon" size={14} /> */}
+              Current Bid
+            </span>
+            <span className="stat-value price">{formatPrice(auction.currentBid)}</span>
           </div>
 
           <div className="stat-item">
-            <Clock className="stat-icon" />
-            <div className="stat-content">
-              <span className="stat-label">Time Left</span>
-              <span className="stat-value">{formatTimeLeft(auction)}</span>
-            </div>
+            <span className="stat-label">
+              <Clock className="stat-icon" size={14} />
+              Time Left
+            </span>
+            <span className="stat-value">{formatTimeLeft(auction)}</span>
+          </div>
+
+          <div className="stat-item full-width">
+            <span className="stat-label">
+              <Hash className="stat-icon" size={14} />
+              Participation Code
+            </span>
+            <span className="stat-value">{auction.participationCode || '-'}</span>
+          </div>
+
+          <div className="stat-item full-width">
+            <span className="stat-label">
+              <Gavel className="stat-icon" size={14} />
+              Auction Type
+            </span>
+            <span className="stat-value">
+              {auction.auctionType ? 
+                auction.auctionType.charAt(0).toUpperCase() + auction.auctionType.slice(1) : 
+                '-'}
+            </span>
           </div>
         </div>
 
         <div className="auction-footer">
           <div className="bid-info">
-            <span className="bid-count">{auction.bids?.length || 0} bids</span>
+            
             <span className="seller-info">by {auction.seller?.fullName}</span>
           </div>
           
@@ -98,7 +160,7 @@ const AuctionCard = ({ auction }) => {
             to={`/auction/${auction._id}`} 
             className="view-details-btn"
           >
-            <Eye className="btn-icon" />
+            <Eye className="btn-icon" size={16} />
             View Details
           </Link>
         </div>
