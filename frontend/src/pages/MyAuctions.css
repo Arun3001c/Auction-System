@@ -1,65 +1,177 @@
 .dashboard-my-auctions {
   padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
+
 .dashboard-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
 }
+
+.dashboard-header h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
 .add-auction-btn {
-  background: #2d7ff9;
+  background: #3b82f6;
+  text-decoration: none;
   color: #fff;
-  padding: 0.5rem 1.2rem;
-  border-radius: 30px;
-  font-weight: 500;
-  display: flex;
+  padding: 0.65rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: 0 2px 8px rgba(45,127,249,0.1);
-  transition: background 0.2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
 }
+
 .add-auction-btn:hover {
-  background: #1a5fc3;
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.1);
 }
+
 .auction-table-wrapper {
   overflow-x: auto;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
 }
+
 .auction-table {
   width: 100%;
   border-collapse: collapse;
   background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  border-radius: 8px;
+  border-radius: 12px;
+  min-width: 800px;
 }
-.auction-table th, .auction-table td {
-  padding: 1rem;
+
+.auction-table th, 
+.auction-table td {
+  padding: 1.25rem 1.5rem;
   text-align: left;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f1f5f9;
 }
+
 .auction-table th {
-  background: #f7faff;
+  background: #f8fafc;
   font-weight: 600;
+  color: #64748b;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
-.edit-btn, .delete-btn {
-  background: none;
-  border: none;
+
+.auction-table tr:last-child td {
+  border-bottom: none;
+}
+
+.auction-table tr:hover td {
+  background-color: #f8fafc;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.status-upcoming {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-active {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.status-ended {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.action-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.85rem;
   cursor: pointer;
-  margin-right: 0.5rem;
-  color: #2d7ff9;
-  transition: color 0.2s;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
-.delete-btn {
-  color: #e74c3c;
+
+.edit-btn {
+  background-color: #eff6ff;
+  color: #3b82f6;
+  text-decoration: none;
 }
+
 .edit-btn:hover {
-  color: #1a5fc3;
+  background-color: #dbeafe;
 }
+
+.view-details-btn {
+  background-color: #3b82f6;
+  color: white;
+  width: 80%;
+}
+
+.view-details-btn:hover {
+  background-color: #2563eb;
+}
+
+.delete-btn {
+  background-color: #fef2f2;
+  color: #ef4444;
+}
+
 .delete-btn:hover {
-  color: #c0392b;
+  background-color: #fee2e2;
 }
-.loading, .error {
-  margin-top: 2rem;
-  text-align: center;
-  color: #888;
+
+@media (max-width: 768px) {
+  .dashboard-my-auctions {
+    padding: 1.5rem 1rem;
+  }
+  
+  .auction-table th, 
+  .auction-table td {
+    padding: 1rem;
+  }
+}
+
+.auction-count {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.icon {
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+
+.action-btn svg {
+  vertical-align: middle;
+  margin-right: 0.25rem;
 }

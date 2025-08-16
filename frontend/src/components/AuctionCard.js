@@ -10,20 +10,26 @@ const AuctionCard = ({ auction }) => {
     }).format(price);
   };
 
-  const formatTimeLeft = (endTime) => {
+  const formatTimeLeft = (auction) => {
     const now = new Date();
-    const end = new Date(endTime);
-    const diff = end - now;
-
-    if (diff <= 0) return 'Ended';
-
+    let target;
+    let label = '';
+    if (auction.status === 'upcoming') {
+      target = new Date(auction.startTime || auction.startDate);
+      label = 'Starts in';
+    } else {
+      target = new Date(auction.endTime || auction.endDate);
+      label = 'Ends in';
+    }
+    if (!target || isNaN(target.getTime())) return 'Unknown';
+    const diff = target - now;
+    if (diff <= 0) return auction.status === 'upcoming' ? 'Started' : 'Ended';
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-    if (days > 0) return `${days}d ${hours}h`;
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m`;
+    if (days > 0) return `${label} ${days}d ${hours}h`;
+    if (hours > 0) return `${label} ${hours}h ${minutes}m`;
+    return `${label} ${minutes}m`;
   };
 
   const getStatusColor = (status) => {
@@ -77,7 +83,7 @@ const AuctionCard = ({ auction }) => {
             <Clock className="stat-icon" />
             <div className="stat-content">
               <span className="stat-label">Time Left</span>
-              <span className="stat-value">{formatTimeLeft(auction.endTime)}</span>
+              <span className="stat-value">{formatTimeLeft(auction)}</span>
             </div>
           </div>
         </div>

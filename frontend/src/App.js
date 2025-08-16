@@ -15,6 +15,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import AuctionDetails from './pages/AuctionDetails';
+import EditAuction from './pages/EditAuction.jsx';
+import AuctionEndedDetails from './pages/AuctionEndedDetails.jsx';
 import CreateAuction from './pages/CreateAuction';
 import Bid from './pages/Bid';
 import Profile from './pages/Profile';
@@ -48,6 +50,8 @@ function App() {
               <Route path="/my-auctions" element={<MyAuctions />} />
               <Route path="/my-bids" element={<MyBids />} />
               <Route path="/my-contacts" element={<MyContacts />} />
+                <Route path="/dashboard/edit-auction/:id" element={<EditAuction />} />
+                <Route path="/dashboard/auction-ended-details/:id" element={<AuctionEndedDetails />} />
             </Routes>
           </main>
           <Footer />

@@ -5,6 +5,20 @@ const upload = require('../middleware/upload');
 
 const router = express.Router();
 
+// Get auctions created by the logged-in user
+router.get('/my', auth, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const auctions = await Auction.find({ seller: userId })
+      .populate('seller', 'fullName')
+      .sort('-createdAt');
+    res.json(auctions);
+  } catch (error) {
+    console.error('Get my auctions error:', error);
+    res.status(500).json({ message: 'Server error fetching your auctions' });
+  }
+});
+
 // Get all auctions with filters
 router.get('/', async (req, res) => {
   try {
