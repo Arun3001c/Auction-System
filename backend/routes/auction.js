@@ -1,9 +1,30 @@
+
 const express = require('express');
 const Auction = require('../models/Auction');
 const { auth } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
 const router = express.Router();
+
+// Soft delete auction (set status to deleted)
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const auction = await Auction.findById(req.params.id);
+    if (!auction) {
+      return res.status(404).json({ message: 'Auction not found' });
+    }
+    // Only seller can delete
+    if (auction.seller.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to delete this auction' });
+    }
+    auction.status = 'deleted';
+    await auction.save();
+    res.json({ message: 'Auction deleted successfully' });
+  } catch (error) {
+    console.error('Delete auction error:', error);
+    res.status(500).json({ message: 'Server error deleting auction' });
+  }
+});
 
 // Get auctions created by the logged-in user
 router.get('/my', auth, async (req, res) => {
@@ -25,12 +46,10 @@ router.get('/', async (req, res) => {
     const { category, status, page = 1, limit = 20, sort = '-createdAt' } = req.query;
     
     // Build filter object
-    const filter = {};
-    
+    const filter = { status: { $ne: 'deleted' } };
     if (category && category !== 'all') {
       filter.category = category;
     }
-    
     if (status) {
       filter.status = status;
     }
@@ -41,7 +60,7 @@ router.get('/', async (req, res) => {
     const skip = (pageNum - 1) * limitNum;
 
     // Get auctions with pagination
-    const auctions = await Auction.find(filter)
+  const auctions = await Auction.find(filter)
       .populate('seller', 'fullName')
       .populate('currentHighestBidder', 'fullName')
       .sort(sort)
@@ -123,7 +142,7 @@ router.get('/categories', async (req, res) => {
       categories.map(async (category) => {
         const count = await Auction.countDocuments({ 
           category,
-          status: { $in: ['active', 'upcoming'] }
+          status: { $in: ['active', 'upcoming'], $ne: 'deleted' }
         });
         return { name: category, count };
       })
@@ -168,12 +187,12 @@ router.get('/search/:query', async (req, res) => {
 
     // Build search filter
     const filter = {
+      status: { $ne: 'deleted' },
       $or: [
         { title: { $regex: query, $options: 'i' } },
         { description: { $regex: query, $options: 'i' } }
       ]
     };
-
     if (category && category !== 'all') {
       filter.category = category;
     }

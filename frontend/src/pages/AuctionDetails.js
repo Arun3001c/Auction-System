@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { ArrowLeft, User, Clock, DollarSign, Gavel, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../utils/AuthContext';
@@ -214,89 +214,13 @@ const AuctionDetails = () => {
                 <span className="seller-name">{auction.seller.fullName}</span>
               </div>
             </div>
-
-            {/* Bidding Section */}
-            {auction.status === 'active' && !isOwner && (
-              <div className="bidding-section">
-                <h3 className="bidding-title">Place Your Bid</h3>
-                
-                {isHighestBidder && (
-                  <div className="bid-status winning">
-                    <CheckCircle className="status-icon" />
-                    <span>You are currently the highest bidder!</span>
-                  </div>
-                )}
-
-                <form onSubmit={handlePlaceBid} className="bid-form">
-                  <div className="bid-input-container">
-                    <span className="currency-symbol">$</span>
-                    <input
-                      type="number"
-                      value={bidAmount}
-                      onChange={(e) => setBidAmount(e.target.value)}
-                      min={auction.currentBid + auction.bidIncrement}
-                      step="0.01"
-                      className="bid-input"
-                      placeholder="Enter bid amount"
-                    />
-                  </div>
-                  <p className="bid-hint">
-                    Minimum bid: {formatPrice(auction.currentBid + auction.bidIncrement)}
-                  </p>
-                  
-                  <button
-                    type="submit"
-                    disabled={isSubmittingBid || !isAuthenticated}
-                    className="place-bid-btn"
-                  >
-                    {isSubmittingBid ? (
-                      <>
-                        <div className="btn-spinner"></div>
-                        Placing Bid...
-                      </>
-                    ) : (
-                      <>
-                        <Gavel className="btn-icon" />
-                        Place Bid
-                      </>
-                    )}
-                  </button>
-                </form>
-              </div>
-            )}
-
-            {/* Owner Notice */}
-            {isOwner && (
-              <div className="bid-status owner">
-                <AlertCircle className="status-icon" />
-                <span>This is your auction. You cannot bid on your own items.</span>
-              </div>
-            )}
-
-            {/* Ended Auction */}
-            {auction.status === 'ended' && (
-              <div className="bid-status ended">
-                <Clock className="status-icon" />
-                <span>This auction has ended.</span>
-                {auction.currentHighestBidder && (
-                  <p>Won by {auction.currentHighestBidder.fullName} for {formatPrice(auction.currentBid)}</p>
-                )}
-              </div>
-            )}
-
-            {/* Not Authenticated */}
-            {!isAuthenticated && auction.status === 'active' && (
-              <div className="auth-required">
-                <AlertCircle className="status-icon" />
-                <span>Please login to place bids on this auction.</span>
-                <button 
-                  onClick={() => navigate('/login')} 
-                  className="login-prompt-btn"
-                >
-                  Login to Bid
-                </button>
-              </div>
-            )}
+            <Link
+              to={`/auction/${auction._id}/bid`}
+              className="add-auction-btn"
+              style={{ marginTop: '1rem', display: 'inline-block', width: 'fit-content' }}
+            >
+              Go to Bidding Page
+            </Link>
           </div>
         </div>
 

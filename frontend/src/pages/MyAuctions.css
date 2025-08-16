@@ -131,13 +131,13 @@
 }
 
 .view-details-btn {
-  background-color: #3b82f6;
+  background-color: #042670;
   color: white;
   width: 80%;
 }
 
 .view-details-btn:hover {
-  background-color: #2563eb;
+  background-color: #042670;
 }
 
 .delete-btn {
@@ -174,4 +174,21 @@
 .action-btn svg {
   vertical-align: middle;
   margin-right: 0.25rem;
+}
+.status-deleted {
+ background: #ef4444;
+ width: 80%;
+  text-decoration: none;
+  color: #fff;
+  padding: 0.65rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
 }

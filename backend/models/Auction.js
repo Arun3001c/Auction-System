@@ -100,7 +100,7 @@ const auctionSchema = new mongoose.Schema({
   }],
   status: {
     type: String,
-    enum: ['upcoming', 'active', 'ended', 'cancelled'],
+    enum: ['upcoming', 'active', 'ended', 'cancelled', 'deleted'],
     default: 'upcoming'
   },
   featured: {
@@ -130,6 +130,8 @@ auctionSchema.virtual('timeLeft').get(function() {
 
 // Update status based on time
 auctionSchema.methods.updateStatus = function() {
+  // Don't overwrite deleted status
+  if (this.status === 'deleted') return Promise.resolve(this);
   const now = new Date();
   if (now < this.startDate) {
     this.status = 'upcoming';

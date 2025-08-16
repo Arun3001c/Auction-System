@@ -66,7 +66,7 @@ const Bid = () => {
   };
 
   const applyFilters = () => {
-    let filtered = [...auctions];
+    let filtered = auctions.filter(a => a.status !== 'deleted');
     const now = new Date();
 
     // Filter by category
