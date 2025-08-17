@@ -10,18 +10,89 @@ const BidderPage = () => {
   const { isAuthenticated, user } = useAuth();
   const [auction, setAuction] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [bidAmount, setBidAmount] = useState('');
+  const [bidError, setBidError] = useState('');
+  const [bidLoading, setBidLoading] = useState(false);
+  const [userBidHistory, setUserBidHistory] = useState([]);
 
   useEffect(() => {
     fetchAuctionDetails();
+    fetchUserBidHistory();
     // eslint-disable-next-line
   }, [id]);
+  // Fetch user's bid history for this auction
+  const fetchUserBidHistory = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await api.get('/auctions/user/participated-bids', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data && user?._id) {
+        // Compare ObjectId as string
+        const userBids = res.data.filter(bid => {
+          // Handle both ObjectId and populated object
+          if (String(bid.auction) === String(id)) return true;
+          if (bid.auction && bid.auction._id && String(bid.auction._id) === String(id)) return true;
+          return false;
+        });
+        setUserBidHistory(userBids);
+      } else {
+        setUserBidHistory([]);
+      }
+    } catch (err) {
+      setUserBidHistory([]);
+    }
+  };
+
+  const handlePlaceBid = async () => {
+    setBidError('');
+    if (!bidAmount || isNaN(bidAmount)) {
+      setBidError('Please enter a valid bid amount.');
+      return;
+    }
+    const minBid = auction.currentBid || auction.startingPrice || 0;
+    if (Number(bidAmount) <= minBid) {
+      setBidError(`Bid must be greater than ${formatPrice(minBid)}`);
+      return;
+    }
+    setBidLoading(true);
+    try {
+      const response = await api.post(`/auctions/${auction._id}/bid`, { amount: Number(bidAmount) });
+      setBidAmount('');
+      // Show success message
+      setBidError('');
+      window.setTimeout(() => {
+        setBidError('Bid placed successfully!');
+      }, 100);
+      // Refetch auction details and user bid history
+      await fetchAuctionDetails();
+      await fetchUserBidHistory();
+    } catch (err) {
+      setBidError(err.response?.data?.message || 'Failed to place bid.');
+    } finally {
+      setBidLoading(false);
+    }
+  };
 
   const fetchAuctionDetails = async () => {
     try {
       setLoading(true);
       const response = await api.get(`/auctions/${id}`);
-      console.log('Auction API response:', response.data);
       setAuction(response.data);
+      // Filter user's bids from auction.bids
+      if (response.data?.bids && user?._id) {
+        const userBids = response.data.bids.filter(bid => {
+          if (!bid.bidder) return false;
+          // bidder can be an object or a string (id)
+          if (typeof bid.bidder === 'string') {
+            return bid.bidder === user._id;
+          }
+          return bid.bidder._id === user._id;
+        });
+        setUserBidHistory(userBids);
+      } else {
+        setUserBidHistory([]);
+      }
     } catch (error) {
       console.error('Error fetching auction:', error);
       navigate('/');
@@ -68,7 +139,18 @@ const BidderPage = () => {
   // Safe fallback for missing fields
   const auctionTitle = auction.title || 'No Title';
   const auctionSeller = auction.seller?.fullName || 'Unknown Seller';
-  const auctionImage = auction.image ? (auction.image.startsWith('http') ? auction.image : `http://localhost:5001/${auction.image}`) : '/placeholder-image.jpg';
+  let auctionImage = '';
+  if (auction.images && auction.images.length > 0) {
+    auctionImage = auction.images[0].startsWith('http')
+      ? auction.images[0]
+      : `http://localhost:5001/${auction.images[0]}`;
+  } else if (auction.image) {
+    auctionImage = auction.image.startsWith('http')
+      ? auction.image
+      : `http://localhost:5001/${auction.image}`;
+  } else {
+    auctionImage = 'https://res.cloudinary.com/dhjbphutc/image/upload/v1755457818/no-image-found_kgenoc.png';
+  }
   const auctionDescription = auction.description || 'No description available.';
 
   return (
@@ -81,6 +163,10 @@ const BidderPage = () => {
 
         <div className="auction-details-header">
           <h1 className="auction-title">{auctionTitle}</h1>
+          <div className="auction-type-info">
+            <span className="auction-type-label">Auction Type:</span>
+            <span className="auction-type-value">{auction.auctionType ? auction.auctionType.charAt(0).toUpperCase() + auction.auctionType.slice(1) : 'Unknown'}</span>
+          </div>
           <div className="seller-info">
             <User className="seller-icon" />
             <div className="seller-details">
@@ -117,26 +203,90 @@ const BidderPage = () => {
                 }}
               />
             </div>
+            {/* User Bid History Section - moved below image */}
+            <div className="auction-details-bid-history-section">
+              <h3>Your Bid History</h3>
+              {userBidHistory.length === 0 ? (
+                <div className="auction-details-no-bid-history">No bids placed yet.</div>
+              ) : (
+                <table className="auction-details-bid-history-table">
+                  <thead>
+                    <tr>
+                      <th>Amount</th>
+                      <th>Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {userBidHistory.map((bid, idx) => (
+                      <tr key={bid._id || idx}>
+                        <td>{formatPrice(bid.amount)}</td>
+                        <td>{
+                          bid.createdAt && !isNaN(new Date(bid.createdAt).getTime())
+                            ? new Date(bid.createdAt).toLocaleString()
+                            : 'Unknown'
+                        }</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
           </div>
 
           {/* Details Section */}
-          <div className="auction-info-section">
-            <div className="auction-stats">
-              <div className="stat-card current-bid">
-                <DollarSign className="stat-icon" />
-                <div className="stat-content">
-                  <span className="stat-label">Current Bid</span>
-                  <span className="stat-value">{formatPrice(auction.currentBid || 0)}</span>
+          <div className="auction-details-info-section">
+            <div className="auction-details-stats">
+              <div className="auction-details-stat-card auction-details-starting-amount">
+                <DollarSign className="auction-details-stat-icon" />
+                <div className="auction-details-stat-content">
+                  <span className="auction-details-stat-label">Starting Amount</span>
+                  <span className="auction-details-stat-value">{formatPrice(auction.startingPrice || 0)}</span>
+                </div>
+              </div>
+              <div className="auction-details-stat-card auction-details-current-bid">
+                <DollarSign className="auction-details-stat-icon" />
+                <div className="auction-details-stat-content">
+                  <span className="auction-details-stat-label">Current Bid</span>
+                  <span className="auction-details-stat-value">{formatPrice(auction.currentBid || 0)}</span>
                 </div>
               </div>
             </div>
+            {/* Conditional Bid UI */}
+            {auction.auctionType !== 'reserve' ? (
+              <form
+                className="auction-details-place-bid-section"
+                onSubmit={e => {
+                  e.preventDefault();
+                  handlePlaceBid();
+                }}
+              >
+                <h3>Place Your Bid</h3>
+                <input
+                  type="number"
+                  min={auction.currentBid || auction.startingPrice || 0}
+                  placeholder="Enter bid amount"
+                  className="auction-details-bid-input"
+                  value={bidAmount}
+                  onChange={e => setBidAmount(e.target.value)}
+                  disabled={bidLoading}
+                />
+                <button
+                  type="submit"
+                  className="auction-details-place-bid-btn"
+                  disabled={bidLoading}
+                >
+                  {bidLoading ? 'Placing Bid...' : 'Place Bid'}
+                </button>
+                {bidError && <div style={{ color: 'red', marginTop: '8px' }}>{bidError}</div>}
+              </form>
+            ) : (
+              <div className="auction-details-reserve-section">
+                <h3>Reserve Auction Participation</h3>
+                <p>To participate in this reserve auction, you must pay an initial amount. Click below to get payment details.</p>
+                <button className="auction-details-payment-details-btn">Click here to get payment details</button>
+              </div>
+            )}
           </div>
-        </div>
-
-        {/* Description Section */}
-        <div className="auction-description">
-          <h2>Description</h2>
-          <p>{auctionDescription}</p>
         </div>
       </div>
     </div>

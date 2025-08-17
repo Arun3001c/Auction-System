@@ -14,6 +14,8 @@ const MyAuctions = () => {
     active: 0,
     ended: 0
   });
+  // Add showActive state at the top
+  const [showActive, setShowActive] = useState(false);
 
   useEffect(() => {
     const fetchAuctions = async () => {
@@ -74,7 +76,35 @@ const MyAuctions = () => {
           </Link>
         </div>
       </div>
-      
+
+      {/* Active Auctions Button and List */}
+      <div style={{ margin: '1rem 0' }}>
+        <button
+          className="show-active-auctions-btn"
+          onClick={() => setShowActive(prev => !prev)}
+        >
+          {showActive ? 'Hide Active Auctions' : 'Show Active Auctions'}
+        </button>
+      </div>
+
+      {showActive && (
+        <div id="active-auctions-section" style={{ marginBottom: '2rem' }}>
+          <h3>Active Auctions</h3>
+          {auctions.filter(a => a.status === 'active').length === 0 ? (
+            <div style={{ color: '#888', marginBottom: '1rem' }}>No active auctions.</div>
+          ) : (
+            auctions.filter(a => a.status === 'active').map(a => (
+              <div key={a._id} className="active-auction-card">
+                <div className="active-auction-title">{a.title}</div>
+                <Link to={`/auction/${a._id}/auctionbid`} className="go-bid-btn">
+                  Go to Bidding Page
+                </Link>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
       {loading ? (
         <div className="loading">Loading...</div>
       ) : error ? (

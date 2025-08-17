@@ -1,10 +1,109 @@
-
 const express = require('express');
 const Auction = require('../models/Auction');
 const { auth } = require('../middleware/auth');
 const upload = require('../middleware/upload');
-
+const bidHistoryController = require('../controllers/bidHistoryController');
+const winnerController = require('../controllers/winnerController');
+const Winner = require('../models/Winner');
 const router = express.Router();
+
+// Update all fields for upcoming auction
+router.put('/:id', auth, upload.fields([
+  { name: 'images', maxCount: 5 },
+  { name: 'video', maxCount: 1 }
+]), async (req, res) => {
+  try {
+    const auction = await Auction.findById(req.params.id);
+    if (!auction) {
+      return res.status(404).json({ message: 'Auction not found' });
+    }
+    if (auction.status !== 'upcoming') {
+      return res.status(400).json({ message: 'Only upcoming auctions can be updated' });
+    }
+    // Only seller can update
+    if (auction.seller.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to update this auction' });
+    }
+    // Update fields
+    const {
+      title,
+      category,
+      description,
+      startTime,
+      endTime,
+      startingPrice,
+      currency,
+      auctionType,
+      reservePrice,
+      minimumPrice
+    } = req.body;
+    if (title) auction.title = title;
+    if (category) auction.category = category;
+    if (description) auction.description = description;
+    if (startTime) auction.startDate = new Date(startTime);
+    if (endTime) auction.endDate = new Date(endTime);
+    if (startingPrice) auction.startingPrice = parseFloat(startingPrice);
+    if (currency) auction.currency = currency;
+    if (auctionType) auction.auctionType = auctionType;
+    if (reservePrice) auction.reservePrice = parseFloat(reservePrice);
+    if (minimumPrice) auction.minimumPrice = parseFloat(minimumPrice);
+    // Handle images
+    if (req.files && req.files.images) {
+      const { uploadToCloudinary } = require('../utils/cloudinary');
+      let images = [];
+      for (const file of req.files.images) {
+        try {
+          const url = await uploadToCloudinary(file.path, 'auctions/images');
+          images.push(url);
+        } catch (err) {
+          console.error('Cloudinary image upload error:', err);
+        }
+      }
+      auction.images = images;
+    }
+    // Handle video
+    if (req.files && req.files.video && req.files.video[0]) {
+      const { uploadToCloudinary } = require('../utils/cloudinary');
+      try {
+        auction.video = await uploadToCloudinary(req.files.video[0].path, 'auctions/videos', 'video');
+      } catch (err) {
+        console.error('Cloudinary video upload error:', err);
+      }
+    }
+    await auction.save();
+    res.json({ message: 'Auction updated successfully', auction });
+  } catch (error) {
+    console.error('Update auction error:', error);
+    res.status(500).json({ message: 'Server error updating auction' });
+  }
+});
+// ...existing code...
+
+// Update end time for active auction
+router.put('/:id/endtime', auth, async (req, res) => {
+  try {
+    const auction = await Auction.findById(req.params.id);
+    if (!auction) {
+      return res.status(404).json({ message: 'Auction not found' });
+    }
+    if (auction.status !== 'active') {
+      return res.status(400).json({ message: 'Only active auctions can be updated' });
+    }
+    // Only seller can update
+    if (auction.seller.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to update this auction' });
+    }
+    auction.endDate = req.body.endTime;
+    await auction.save();
+    res.json({ message: 'End time updated successfully', endTime: auction.endDate });
+  } catch (error) {
+    console.error('Update end time error:', error);
+    res.status(500).json({ message: 'Server error updating end time' });
+  }
+});
+
+// Get user's participated bid history
+router.get('/user/participated-bids', auth, bidHistoryController.getParticipatedBidHistory);
 
 // Soft delete auction (set status to deleted)
 router.delete('/:id', auth, async (req, res) => {
@@ -241,15 +340,16 @@ router.get('/search/:query', async (req, res) => {
 // Place bid (requires authentication)
 router.post('/:id/bid', auth, async (req, res) => {
   try {
-    const { amount } = req.body;
-    const auctionId = req.params.id;
-    const userId = req.user._id;
+  const { amount } = req.body;
+  const auctionId = req.params.id;
+  const userId = req.user._id;
+  const userEmail = req.user.email;
 
     if (!amount || amount <= 0) {
       return res.status(400).json({ message: 'Valid bid amount is required' });
     }
 
-    const auction = await Auction.findById(auctionId);
+  const auction = await Auction.findById(auctionId);
     
     if (!auction) {
       return res.status(404).json({ message: 'Auction not found' });
@@ -285,6 +385,27 @@ router.post('/:id/bid', auth, async (req, res) => {
       timestamp: new Date()
     });
 
+    // Store bid in ParticipatedBidHistory and CreatedBidHistory
+    try {
+      const bidHistoryController = require('../controllers/bidHistoryController');
+      await bidHistoryController.addParticipatedBid(
+        userId,
+        userEmail,
+        auctionId,
+        auction.title,
+        amount
+      );
+      // Also store bid in CreatedBidHistory for seller
+      await bidHistoryController.addCreatedBid(
+        auctionId,
+        auction.seller,
+        userId,
+        amount
+      );
+    } catch (err) {
+      console.error('Error saving bid history:', err);
+    }
+
     // Update current bid and highest bidder
     auction.currentBid = amount;
     auction.currentHighestBidder = userId;
@@ -296,6 +417,9 @@ router.post('/:id/bid', auth, async (req, res) => {
       .populate('seller', 'fullName')
       .populate('currentHighestBidder', 'fullName')
       .populate('bids.bidder', 'fullName');
+
+  // If auction ended, save winner
+  await saveWinnerIfEnded(updatedAuction);
 
     res.json({
       message: 'Bid placed successfully',

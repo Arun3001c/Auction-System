@@ -37,7 +37,7 @@ const ImageCarousel = ({ images = [], alt = '', autoPlay = true, interval = 4000
   if (!images.length) {
     return (
       <img 
-        src="/placeholder-image.jpg" 
+        src="https://res.cloudinary.com/dhjbphutc/image/upload/v1755457818/no-image-found_kgenoc.png" 
         alt="No image" 
         className="auction-image" 
       />
@@ -46,7 +46,9 @@ const ImageCarousel = ({ images = [], alt = '', autoPlay = true, interval = 4000
 
   return (
     <div className="carousel-container">
-      <button className="carousel-btn prev" onClick={goPrev}>&lt;</button>
+      {images.length > 1 && (
+        <button className="carousel-btn prev" onClick={goPrev}>&lt;</button>
+      )}
 
       <div className="carousel-slide">
         <img
@@ -57,7 +59,9 @@ const ImageCarousel = ({ images = [], alt = '', autoPlay = true, interval = 4000
         />
       </div>
 
-      <button className="carousel-btn next" onClick={goNext}>&gt;</button>
+      {images.length > 1 && (
+        <button className="carousel-btn next" onClick={goNext}>&gt;</button>
+      )}
 
       <div className="carousel-indicators">
         {images.map((img, idx) => (

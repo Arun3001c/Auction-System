@@ -108,16 +108,24 @@ const AuctionBidPage = () => {
         <div className="auction-details-grid">
           {/* Image Section */}
           <div className="auction-image-section">
-                        <div className="auction-image-container">
-                      <img 
-                        src={auction.image?.startsWith('http') ? auction.image : `http://localhost:5000/${auction.image}`}
-                        alt={auction.title}
-                        className="auction-image"
-                        onError={(e) => {
-                          e.target.src = '/placeholder-image.jpg';
-                        }}
-                      />
-                    </div>
+            <div className="auction-image-container">
+              <img
+                src={auction.images && auction.images.length > 0
+                  ? (auction.images[0].startsWith('http')
+                      ? auction.images[0]
+                      : `http://localhost:5000/${auction.images[0]}`)
+                  : auction.image
+                    ? (auction.image.startsWith('http')
+                        ? auction.image
+                        : `http://localhost:5000/${auction.image}`)
+                    : 'https://res.cloudinary.com/dhjbphutc/image/upload/v1755457818/no-image-found_kgenoc.png'}
+                alt={auction.title}
+                className="auction-image"
+                onError={(e) => {
+                  e.target.src = 'https://res.cloudinary.com/dhjbphutc/image/upload/v1755457818/no-image-found_kgenoc.png';
+                }}
+              />
+            </div>
 
               </div>
 
