@@ -48,17 +48,23 @@ const validatePhoneNumber = (phone) => {
 
 // Format phone number to international format
 const formatPhoneNumber = (phone) => {
+  // Ensure phone is a string
+  if (!phone) return '';
+  let phoneStr = String(phone);
+  // If multiple numbers separated by comma, use only the first
+  if (phoneStr.includes(',')) {
+    phoneStr = phoneStr.split(',')[0].trim();
+  }
   // Remove all non-digit characters
-  const cleaned = phone.replace(/\D/g, '');
-  
-  // Add country code if not present (assuming US/Canada)
+  const cleaned = phoneStr.replace(/\D/g, '');
+  // Add country code if not present
+  // If you want to support India (+91) for 10-digit numbers, use +91
   if (cleaned.length === 10) {
-    return `+1${cleaned}`;
-  } else if (cleaned.length === 11 && cleaned.startsWith('1')) {
+    return `+91${cleaned}`;
+  } else if (cleaned.length === 11 && cleaned.startsWith('91')) {
     return `+${cleaned}`;
   }
-  
-  return phone; // Return as is if already formatted
+  return phoneStr; // Return as is if already formatted
 };
 
 module.exports = {

@@ -264,9 +264,11 @@ const Register = () => {
                     style={{ flex: 1 }}
                     {...register('phoneNumber', {
                       required: 'Phone number is required',
-                      pattern: {
-                        value: /^[\d\s\-\(\)]{6,}$/,
-                        message: 'Please enter a valid phone number'
+                      validate: value => {
+                        if (countryCode === '+91') {
+                          return (/^\d{10}$/.test(value)) || 'Please enter a valid 10-digit Indian phone number';
+                        }
+                        return (/^\d{10,}$/.test(value)) || 'Please enter a valid phone number';
                       }
                     })}
                   />

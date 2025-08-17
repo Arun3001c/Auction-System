@@ -17,6 +17,7 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
+import { BadgeCheck, MailCheck, ShieldCheck } from "lucide-react"
 import { useAuth } from '../utils/AuthContext';
 import api from '../utils/api';
 
@@ -435,6 +436,7 @@ const Profile = () => {
                       {/* Email Verification */}
                       {!user?.isEmailVerified && !showEmailOtpInput && (
                         <button className="verify-profile-btn" onClick={() => { setShowEmailOtpInput(true); handleSendEmailOtp(); }} disabled={verifying}>
+                          <BadgeCheck className="badge-icon" />
                           Verify Profile
                         </button>
                       )}
@@ -452,11 +454,15 @@ const Profile = () => {
                           <button className="verify-otp-btn" onClick={handleVerifyEmailOtp} disabled={verifying || emailOtp.length !== 6}>
                             Verify Email OTP
                           </button>
+                          <button className="verify-otp-btn" style={{marginLeft: '0.5rem', background: '#f59e42'}} onClick={handleSendEmailOtp} disabled={verifying}>
+                            Resend OTP
+                          </button>
                         </div>
                       )}
                       {/* Phone Verification */}
                       {user?.isEmailVerified && !user?.isPhoneVerified && !showPhoneOtpInput && (
                         <button className="verify-profile-btn" onClick={() => { setShowPhoneOtpInput(true); handleSendPhoneOtp(); }} disabled={verifying}>
+                          <BadgeCheck className="badge-icon" />
                           Verify Phone
                         </button>
                       )}
@@ -473,6 +479,9 @@ const Profile = () => {
                           />
                           <button className="verify-otp-btn" onClick={handleVerifyPhoneOtp} disabled={verifying || phoneOtp.length !== 6}>
                             Verify Phone OTP
+                          </button>
+                          <button className="verify-otp-btn" style={{marginLeft: '0.5rem', background: '#f59e42'}} onClick={handleSendPhoneOtp} disabled={verifying}>
+                            Resend OTP
                           </button>
                         </div>
                       )}
