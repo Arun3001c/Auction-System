@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { LogIn, Mail, Lock, Eye, EyeOff } from 'lucide-react';
@@ -7,6 +7,7 @@ import { useAuth } from '../utils/AuthContext';
 import api from '../utils/api';
 
 const Login = () => {
+  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
@@ -21,7 +22,13 @@ const Login = () => {
       
       login(user, token);
       toast.success('Login successful!');
-      navigate('/');
+      // If redirected from auction details, go back there
+      const redirectTo = location.state?.redirectTo;
+      if (redirectTo) {
+        navigate(redirectTo);
+      } else {
+        navigate('/');
+      }
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
       toast.error(errorMessage);

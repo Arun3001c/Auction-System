@@ -1,8 +1,13 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Eye, Clock, DollarSign, Hash, Gavel } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { useAuth } from '../utils/AuthContext';
+import ImageCarousel from './ImageCarousel';
 
 const AuctionCard = ({ auction }) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   // Map currency code to locale and symbol
   const currencyLocaleMap = {
     USD: { locale: 'en-US', symbol: '$' },
@@ -87,14 +92,7 @@ const getCurrencyInfo = (currency) => currencyLocaleMap[currency] || { locale: '
   return (
     <div className="auction-card">
       <div className="auction-image-container">
-        <img 
-          src={auction.image?.startsWith('http') ? auction.image : `http://localhost:5000/${auction.image}`} 
-          alt={auction.title}
-          className="auction-image"
-          onError={(e) => {
-            e.target.src = '/placeholder-image.jpg';
-          }}
-        />
+        <ImageCarousel images={auction.images || (auction.image ? [auction.image] : [])} alt={auction.title} />
         <div className={`auction-status ${getStatusColor(auction.status)}`}>
           {auction.status.charAt(0).toUpperCase() + auction.status.slice(1)}
         </div>
@@ -156,13 +154,20 @@ const getCurrencyInfo = (currency) => currencyLocaleMap[currency] || { locale: '
             <span className="seller-info">by {auction.seller?.fullName}</span>
           </div>
           
-          <Link 
-            to={`/auction/${auction._id}`} 
+          <button
             className="view-details-btn"
+            onClick={() => {
+              if (!user) {
+                toast.info('Please login to view auction details');
+                navigate('/login', { state: { redirectTo: `/auction/${auction._id}` } });
+              } else {
+                navigate(`/auction/${auction._id}`);
+              }
+            }}
           >
             <Eye className="btn-icon" size={16} />
             View Details
-          </Link>
+          </button>
         </div>
       </div>
     </div>

@@ -140,9 +140,14 @@ const Profile = () => {
         location: user.location || ''
       });
       
-      if (user.profileImg) {
-        setImagePreview(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${user.profileImg}`);
-      }
+          if (user.profileImg) {
+            // If profileImg is a Cloudinary URL, use it directly
+            if (user.profileImg.startsWith('http')) {
+              setImagePreview(user.profileImg);
+            } else {
+              setImagePreview(`http://localhost:5001/${user.profileImg.startsWith('uploads/') ? user.profileImg : 'uploads/' + user.profileImg}`);
+            }
+          }
     }
   }, [user, reset]);
 
@@ -208,7 +213,15 @@ const Profile = () => {
   const cancelEdit = () => {
     setIsEditing(false);
     setProfileImage(null);
-    setImagePreview(user?.profileImg ? `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${user.profileImg}` : null);
+    if (user?.profileImg) {
+      if (user.profileImg.startsWith('http')) {
+        setImagePreview(user.profileImg);
+      } else {
+        setImagePreview(`http://localhost:5001/${user.profileImg.startsWith('uploads/') ? user.profileImg : 'uploads/' + user.profileImg}`);
+      }
+    } else {
+      setImagePreview(null);
+    }
     reset({
       fullName: user?.fullName || '',
       email: user?.email || '',

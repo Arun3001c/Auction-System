@@ -412,9 +412,27 @@ router.post('/', auth, upload.fields([
       return res.status(400).json({ message: 'End date must be after start date' });
     }
 
-    // Process uploaded files
-    const images = req.files.images.map(file => `/uploads/${file.filename}`);
-    const video = req.files.video ? `/uploads/${req.files.video[0].filename}` : null;
+    // Process uploaded files with Cloudinary
+    const { uploadToCloudinary } = require('../utils/cloudinary');
+    let images = [];
+    let video = null;
+    if (req.files && req.files.images) {
+      for (const file of req.files.images) {
+        try {
+          const url = await uploadToCloudinary(file.path, 'auctions/images');
+          images.push(url);
+        } catch (err) {
+          console.error('Cloudinary image upload error:', err);
+        }
+      }
+    }
+    if (req.files && req.files.video && req.files.video[0]) {
+      try {
+        video = await uploadToCloudinary(req.files.video[0].path, 'auctions/videos', 'video');
+      } catch (err) {
+        console.error('Cloudinary video upload error:', err);
+      }
+    }
 
     // Create auction object
     const auctionData = {

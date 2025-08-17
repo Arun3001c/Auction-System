@@ -75,20 +75,29 @@ router.post('/register', upload.single('profileImg'), [
     const phoneOTP = generateOTP();
 
     // Create user
-    const user = new User({
-      uid,
-      fullName,
-      email,
-      phoneNumber: formatPhoneNumber(phoneNumber),
-      password,
-      profileImg: req.file ? req.file.path : null,
-      emailVerificationToken: emailOTP,
-      phoneVerificationToken: phoneOTP,
-      emailVerificationExpires: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
-      phoneVerificationExpires: new Date(Date.now() + 10 * 60 * 1000)
-    });
+      let profileImgUrl = null;
+      if (req.file) {
+        const { uploadToCloudinary } = require('../utils/cloudinary');
+        try {
+          profileImgUrl = await uploadToCloudinary(req.file.path, 'profiles');
+        } catch (err) {
+          console.error('Cloudinary upload error:', err);
+        }
+      }
+      const user = new User({
+        uid,
+        fullName,
+        email,
+        phoneNumber: formatPhoneNumber(phoneNumber),
+        password,
+        profileImg: profileImgUrl,
+        emailVerificationToken: emailOTP,
+        phoneVerificationToken: phoneOTP,
+        emailVerificationExpires: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
+        phoneVerificationExpires: new Date(Date.now() + 10 * 60 * 1000)
+      });
 
-    await user.save();
+      await user.save();
 
     // Send verification email and SMS
     try {
@@ -461,7 +470,12 @@ router.put('/profile', auth, upload.single('profileImg'), async (req, res) => {
 
     // Handle profile image upload
     if (req.file) {
-      user.profileImg = `/uploads/${req.file.filename}`;
+      const { uploadToCloudinary } = require('../utils/cloudinary');
+      try {
+        user.profileImg = await uploadToCloudinary(req.file.path, 'profiles');
+      } catch (err) {
+        console.error('Cloudinary upload error:', err);
+      }
     }
 
     await user.save();

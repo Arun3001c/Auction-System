@@ -154,14 +154,31 @@ const AuctionDetails = () => {
           {/* Image Section */}
           <div className="auction-image-section">
             <div className="auction-image-container">
-              <img 
-                src={auction.image?.startsWith('http') ? auction.image : `http://localhost:5000/${auction.image}`}
-                alt={auction.title}
-                className="auction-image"
-                onError={(e) => {
-                  e.target.src = '/placeholder-image.jpg';
-                }}
-              />
+              {/* Support multiple images from Cloudinary */}
+              {Array.isArray(auction.images) && auction.images.length > 0 ? (
+                auction.images.map((imgUrl, idx) => (
+                  <img
+                    key={idx}
+                    src={imgUrl.startsWith('http') ? imgUrl : `http://localhost:5001/${imgUrl}`}
+                    alt={auction.title}
+                    className="auction-image"
+                    onError={(e) => {
+                      e.target.src = '/placeholder-image.jpg';
+                    }}
+                  />
+                ))
+              ) : auction.image ? (
+                <img
+                  src={auction.image.startsWith('http') ? auction.image : `http://localhost:5001/${auction.image}`}
+                  alt={auction.title}
+                  className="auction-image"
+                  onError={(e) => {
+                    e.target.src = '/placeholder-image.jpg';
+                  }}
+                />
+              ) : (
+                <img src="/placeholder-image.jpg" alt="No image" className="auction-image" />
+              )}
               <div className={`auction-status ${getStatusColor(auction.status)}`}>
                 {auction.status.charAt(0).toUpperCase() + auction.status.slice(1)}
               </div>

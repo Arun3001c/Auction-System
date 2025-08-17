@@ -151,7 +151,7 @@ const Home = () => {
                 <option value="">All Statuses</option>
                 <option value="active">Active</option>
                 <option value="upcoming">Upcoming</option>
-                <option value="ended">Ended</option>
+                {/* Removed 'ended' option */}
               </select>
             </div>
           </div>
@@ -185,7 +185,7 @@ const Home = () => {
             </div>
           ) : (
             <div className="auctions-grid">
-              {auctions.map(auction => (
+              {auctions.filter(a => a.status !== 'ended').map(auction => (
                 <AuctionCard key={auction._id} auction={auction} />
               ))}
             </div>
