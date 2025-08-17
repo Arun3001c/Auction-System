@@ -7,6 +7,26 @@ const winnerController = require('../controllers/winnerController');
 const Winner = require('../models/Winner');
 const router = express.Router();
 
+// Utility to save winner when auction ends
+async function saveWinnerIfEnded(auction) {
+  if (auction.status === 'ended' && auction.currentHighestBidder) {
+    // Check if winner already exists
+    const existing = await Winner.findOne({ auction: auction._id });
+    if (!existing) {
+      // Get user details
+      const user = await require('../models/User').findById(auction.currentHighestBidder);
+      await Winner.create({
+        auction: auction._id,
+        user: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phoneNumber,
+        amount: auction.currentBid
+      });
+    }
+  }
+}
+
 // Update all fields for upcoming auction
 router.put('/:id', auth, upload.fields([
   { name: 'images', maxCount: 5 },
@@ -77,7 +97,6 @@ router.put('/:id', auth, upload.fields([
     res.status(500).json({ message: 'Server error updating auction' });
   }
 });
-// ...existing code...
 
 // Update end time for active auction
 router.put('/:id/endtime', auth, async (req, res) => {
@@ -93,9 +112,12 @@ router.put('/:id/endtime', auth, async (req, res) => {
     if (auction.seller.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to update this auction' });
     }
-    auction.endDate = req.body.endTime;
-    await auction.save();
-    res.json({ message: 'End time updated successfully', endTime: auction.endDate });
+  auction.endDate = req.body.endTime;
+  await auction.save();
+  // Update status and save winner if ended
+  await auction.updateStatus();
+  await saveWinnerIfEnded(auction);
+  res.json({ message: 'End time updated successfully', endTime: auction.endDate });
   } catch (error) {
     console.error('Update end time error:', error);
     res.status(500).json({ message: 'Server error updating end time' });

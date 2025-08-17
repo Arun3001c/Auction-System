@@ -120,12 +120,30 @@ const AuctionBidPage = () => {
                         : `http://localhost:5000/${auction.image}`)
                     : 'https://res.cloudinary.com/dhjbphutc/image/upload/v1755457818/no-image-found_kgenoc.png'}
                 alt={auction.title}
-                className="auction-image"
+                style={{ width: '100%', maxWidth: '500px', height: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto' }}
                 onError={(e) => {
                   e.target.src = 'https://res.cloudinary.com/dhjbphutc/image/upload/v1755457818/no-image-found_kgenoc.png';
                 }}
               />
             </div>
+        {/* End Auction Button for Seller */}
+        {auction.status === 'active' && user && auction.seller && user._id === auction.seller._id && (
+          <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+            <button
+              style={{ background: '#ef4444', color: 'white', padding: '0.75rem 2rem', borderRadius: '8px', fontWeight: 600, fontSize: '1rem', border: 'none', cursor: 'pointer' }}
+              onClick={async () => {
+                if (window.confirm('Are you sure you want to end this auction?')) {
+                  try {
+                    await api.put(`/auctions/${auction._id}/endtime`, { endTime: new Date().toISOString() });
+                    window.location.reload();
+                  } catch (err) {
+                    alert('Failed to end auction.');
+                  }
+                }
+              }}
+            >End Auction</button>
+          </div>
+        )}
 
               </div>
 

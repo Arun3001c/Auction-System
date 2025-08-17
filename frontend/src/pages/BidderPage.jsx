@@ -197,7 +197,7 @@ const BidderPage = () => {
               <img 
                 src={auctionImage}
                 alt={auctionTitle}
-                className="auction-image"
+                style={{ width: '100%', maxWidth: '500px', height: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto' }}
                 onError={(e) => {
                   e.target.src = '/placeholder-image.jpg';
                 }}
