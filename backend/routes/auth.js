@@ -138,9 +138,7 @@ router.post('/verify-email', auth, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (user.isEmailVerified) {
-      return res.status(400).json({ message: 'Email is already verified' });
-    }
+  // Allow re-verification even if already verified
 
     if (user.emailVerificationToken !== otp || new Date() > user.emailVerificationExpires) {
       return res.status(400).json({ message: 'Invalid or expired OTP' });
@@ -204,9 +202,7 @@ router.post('/resend-email-verification', auth, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (user.isEmailVerified) {
-      return res.status(400).json({ message: 'Email is already verified' });
-    }
+  // Always allow sending OTP for re-verification
 
     const emailOTP = generateOTP();
     user.emailVerificationToken = emailOTP;
@@ -232,9 +228,7 @@ router.post('/resend-phone-verification', auth, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (user.isPhoneVerified) {
-      return res.status(400).json({ message: 'Phone is already verified' });
-    }
+  // Always allow sending OTP for re-verification
 
     const phoneOTP = generateOTP();
     user.phoneVerificationToken = phoneOTP;

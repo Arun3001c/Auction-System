@@ -3213,3 +3213,21 @@ display: inline-block;
     grid-template-columns: 1fr;
   }
 }
+
+
+.auction-details-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.bid-time-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bid-total-count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

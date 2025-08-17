@@ -21,6 +21,18 @@ import { useAuth } from '../utils/AuthContext';
 import api from '../utils/api';
 
 const Profile = () => {
+  // Send email OTP
+  const handleSendEmailOtp = async () => {
+    setVerifying(true);
+    try {
+      await api.post('/auth/resend-email-verification');
+      setEmailOtpSent(true);
+      toast.success('OTP sent to your email');
+    } catch (err) {
+      toast.error('Failed to send email OTP');
+    }
+    setVerifying(false);
+  };
   const { user, updateUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
@@ -29,6 +41,68 @@ const Profile = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  // OTP verification states
+  const [showEmailOtpInput, setShowEmailOtpInput] = useState(false);
+  const [emailOtp, setEmailOtp] = useState('');
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [emailOtpVerified, setEmailOtpVerified] = useState(false);
+  const [showPhoneOtpInput, setShowPhoneOtpInput] = useState(false);
+  const [phoneOtp, setPhoneOtp] = useState('');
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+  const [phoneOtpVerified, setPhoneOtpVerified] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  // Verify email OTP
+  const handleVerifyEmailOtp = async () => {
+    setVerifying(true);
+    try {
+      const res = await api.post('/auth/verify-email', { otp: emailOtp });
+      if (res.data.message && res.data.message.toLowerCase().includes('success')) {
+        setEmailOtpVerified(true);
+        toast.success('Email verified successfully');
+        setShowEmailOtpInput(false);
+        // Refetch user profile to update verification status
+        const profileRes = await api.get('/auth/profile');
+        updateUser(profileRes.data);
+      } else {
+        toast.error(res.data.message || 'Failed to verify email');
+      }
+    } catch (err) {
+      toast.error('Failed to verify email');
+    }
+    setVerifying(false);
+  };
+
+  // Send phone OTP
+  const handleSendPhoneOtp = async () => {
+    setVerifying(true);
+    try {
+      await api.post('/auth/resend-phone-verification');
+      setPhoneOtpSent(true);
+      toast.success('OTP sent to your phone number');
+    } catch (err) {
+      toast.error('Failed to send phone OTP');
+    }
+    setVerifying(false);
+  };
+
+  // Verify phone OTP
+  const handleVerifyPhoneOtp = async () => {
+    setVerifying(true);
+    try {
+      const res = await api.post('/auth/verify-phone', { otp: phoneOtp });
+      if (res.data.message && res.data.message.toLowerCase().includes('success')) {
+        setPhoneOtpVerified(true);
+        toast.success('Phone verified successfully!');
+        updateUser({ ...user, phoneVerified: true });
+        setShowPhoneOtpInput(false);
+      } else {
+        toast.error('Invalid OTP');
+      }
+    } catch (err) {
+      toast.error('Failed to verify phone OTP');
+    }
+    setVerifying(false);
+  };
 
   const { 
     register, 
@@ -169,9 +243,11 @@ const Profile = () => {
                       className="profile-image"
                     />
                   ) : (
-                    <div className="profile-image-placeholder">
-                      <User className="placeholder-icon" />
-                    </div>
+                    <img 
+                      src="https://ui-avatars.com/api/?name=User&background=cccccc&color=555555&size=128" 
+                      alt="Default Profile" 
+                      className="profile-image"
+                    />
                   )}
                   
                   {isEditing && (
@@ -332,15 +408,14 @@ const Profile = () => {
 
                 <div className="form-section">
                   <h3 className="section-title">Account Verification</h3>
-                  
                   <div className="verification-status">
                     <div className="verification-item">
                       <div className="verification-info">
                         <Mail className="verification-icon" />
                         <span>Email Verification</span>
                       </div>
-                      <div className={`verification-badge ${user?.emailVerified ? 'verified' : 'pending'}`}>
-                        {user?.emailVerified ? 'Verified' : 'Pending'}
+                      <div className={`verification-badge ${user?.isEmailVerified ? 'verified' : 'pending'}`}>
+                        {user?.isEmailVerified ? 'Verified' : 'Pending'}
                       </div>
                     </div>
 
@@ -349,11 +424,60 @@ const Profile = () => {
                         <Phone className="verification-icon" />
                         <span>Phone Verification</span>
                       </div>
-                      <div className={`verification-badge ${user?.phoneVerified ? 'verified' : 'pending'}`}>
-                        {user?.phoneVerified ? 'Verified' : 'Pending'}
+                      <div className={`verification-badge ${user?.isPhoneVerified ? 'verified' : 'pending'}`}>
+                        {user?.isPhoneVerified ? 'Verified' : 'Pending'}
                       </div>
                     </div>
                   </div>
+                  {/* Verify Profile Button and OTP UI */}
+                  {(!user?.isEmailVerified || !user?.isPhoneVerified) && (
+                    <div style={{ marginTop: '1rem' }}>
+                      {/* Email Verification */}
+                      {!user?.isEmailVerified && !showEmailOtpInput && (
+                        <button className="verify-profile-btn" onClick={() => { setShowEmailOtpInput(true); handleSendEmailOtp(); }} disabled={verifying}>
+                          Verify Profile
+                        </button>
+                      )}
+                      {showEmailOtpInput && (
+                        <div className="otp-verification-block">
+                          <label htmlFor="email-otp-input">Enter Email OTP:</label>
+                          <input
+                            id="email-otp-input"
+                            type="text"
+                            value={emailOtp}
+                            onChange={e => setEmailOtp(e.target.value)}
+                            maxLength={6}
+                            style={{ marginRight: '1rem' }}
+                          />
+                          <button className="verify-otp-btn" onClick={handleVerifyEmailOtp} disabled={verifying || emailOtp.length !== 6}>
+                            Verify Email OTP
+                          </button>
+                        </div>
+                      )}
+                      {/* Phone Verification */}
+                      {user?.isEmailVerified && !user?.isPhoneVerified && !showPhoneOtpInput && (
+                        <button className="verify-profile-btn" onClick={() => { setShowPhoneOtpInput(true); handleSendPhoneOtp(); }} disabled={verifying}>
+                          Verify Phone
+                        </button>
+                      )}
+                      {showPhoneOtpInput && (
+                        <div className="otp-verification-block">
+                          <label htmlFor="phone-otp-input">Enter Phone OTP:</label>
+                          <input
+                            id="phone-otp-input"
+                            type="text"
+                            value={phoneOtp}
+                            onChange={e => setPhoneOtp(e.target.value)}
+                            maxLength={6}
+                            style={{ marginRight: '1rem' }}
+                          />
+                          <button className="verify-otp-btn" onClick={handleVerifyPhoneOtp} disabled={verifying || phoneOtp.length !== 6}>
+                            Verify Phone OTP
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 

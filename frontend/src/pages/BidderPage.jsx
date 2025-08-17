@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../utils/AuthContext';
 import api from '../utils/api';
-import BidSection from './BidSection';
 import { ArrowLeft, User, DollarSign, Clock, Gavel } from 'lucide-react';
 
-const AuctionBidPage = () => {
+const BidderPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
@@ -108,47 +107,57 @@ const AuctionBidPage = () => {
         <div className="auction-details-grid">
           {/* Image Section */}
           <div className="auction-image-section">
-                        <div className="auction-image-container">
-                      <img 
-                        src={auction.image?.startsWith('http') ? auction.image : `http://localhost:5000/${auction.image}`}
-                        alt={auction.title}
-                        className="auction-image"
-                        onError={(e) => {
-                          e.target.src = '/placeholder-image.jpg';
-                        }}
-                      />
-                    </div>
+            <div className="auction-image-container">
+              <img 
+                src={auction.image?.startsWith('http') ? auction.image : `http://localhost:5000/${auction.image}`}
+                alt={auction.title}
+                className="auction-image"
+                onError={(e) => {
+                  e.target.src = '/placeholder-image.jpg';
+                }}
+              />
+              {/* <div className={`auction-status status-active`}>
+                {auction.status.charAt(0).toUpperCase() + auction.status.slice(1)}
+              </div> */}
+              {/* {auction.featured && (
+                <div className="featured-badge">Featured</div>
+              )} */}
+              
+            </div>
+          </div>
 
-              </div>
+          {/* Details Section */}
+          <div className="auction-info-section">
+            {/* <div className="auction-header">
+              <h1 className="auction-title">{auction.title}</h1>
+              <p className="auction-category">{auction.category}</p>
+            </div> */}
 
-
-           {/* Bidder List Section (iframe-like block) */}
-        <div className="auction-bidder-iframe" style={{marginTop: '2rem', background: '#fff', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', padding: '1.5rem'}}>
-              <h2 style={{fontSize: '1.25rem', fontWeight: 700, color: '#1e293b', marginBottom: '1rem'}}>Bidders</h2>
-              <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
-                      {auction.bids && auction.bids.length > 0 ? (
-                        auction.bids.map((bid, idx) => (
-                          <div key={idx} style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', borderRadius: '8px', padding: '0.75rem 1rem'}}>
-                            <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-                              <User style={{width: '1rem', height: '1rem', color: '#64748b'}} />
-                              <span style={{fontWeight: 600, color: '#1e293b'}}>{bid.bidder.fullName}</span>
-                            </div>
-                            <span style={{fontWeight: 600, color: '#4f46e5'}}>{formatPrice(bid.amount)}</span>
-                          </div>
-                        ))
-                      ) : (
-                        <span style={{color: '#64748b'}}>No bids yet.</span>
-                      )}
+            <div className="auction-stats">
+              {/* <div className="stat-card current-bid">
+                <DollarSign className="stat-icon" />
+                <div className="stat-content">
+                  <span className="stat-label">Current Bid</span>
+                  <span className="stat-value">{formatPrice(auction.currentBid)}</span>
                 </div>
+              </div> */}
+
+          
+             
+            </div>
+
+          
+          </div>
         </div>
 
-
-        </div>
-
-       
+        {/* Description Section */}
+        {/* <div className="auction-description">
+          <h2>Description</h2>
+          <p>{auction.description}</p>
+        </div> */}
       </div>
     </div>
   );
 };
 
-export default AuctionBidPage;
+export default BidderPage;

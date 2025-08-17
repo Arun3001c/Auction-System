@@ -236,7 +236,7 @@ const AuctionDetails = () => {
           <button
             className="add-auction-btn"
             style={{ marginTop: '1rem', display: 'inline-block', width: 'fit-content' }}
-            onClick={() => navigate(`/auction/${auction._id}/bid`)}
+            onClick={() => navigate(`/auction/${auction._id}/bidder`)}
           >
             Participate in Auction
           </button>
