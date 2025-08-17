@@ -135,7 +135,7 @@ const getCurrencyInfo = (currency) => currencyLocaleMap[currency] || { locale: '
             <span className="stat-value">{auction.participationCode || '-'}</span>
           </div>
 
-          <div className="stat-item full-width">
+          {/* <div className="stat-item full-width">
             <span className="stat-label">
               <Gavel className="stat-icon" size={14} />
               Auction Type
@@ -145,7 +145,7 @@ const getCurrencyInfo = (currency) => currencyLocaleMap[currency] || { locale: '
                 auction.auctionType.charAt(0).toUpperCase() + auction.auctionType.slice(1) : 
                 '-'}
             </span>
-          </div>
+          </div> */}
         </div>
 
         <div className="auction-footer">

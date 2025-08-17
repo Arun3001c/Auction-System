@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { ArrowLeft, User, Clock, DollarSign, Gavel, AlertCircle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, User, Clock, DollarSign, Gavel, AlertCircle, CheckCircle, PlayCircle, MoveLeft, MoveRight } from 'lucide-react';
 import { useAuth } from '../utils/AuthContext';
 import api from '../utils/api';
 // import './AuctionDetails.css'; // Assuming you have a CSS file for styling
@@ -13,6 +13,7 @@ const AuctionDetails = () => {
   const [loading, setLoading] = useState(true);
   const [bidAmount, setBidAmount] = useState('');
   const [isSubmittingBid, setIsSubmittingBid] = useState(false);
+  const [selectedMediaIdx, setSelectedMediaIdx] = useState(0);
 
   useEffect(() => {
     fetchAuctionDetails();
@@ -116,9 +117,9 @@ const AuctionDetails = () => {
   if (loading) {
     return (
       <div className="auction-details-page">
-        <div className="container">
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
+        <div className="auction-details-container">
+          <div className="auction-details-loading-container">
+            <div className="auction-details-loading-spinner"></div>
             <p>Loading auction details...</p>
           </div>
         </div>
@@ -129,11 +130,11 @@ const AuctionDetails = () => {
   if (!auction) {
     return (
       <div className="auction-details-page">
-        <div className="container">
-          <div className="error-container">
+        <div className="auction-details-container">
+          <div className="auction-details-error-container">
             <h2>Auction not found</h2>
-            <button onClick={() => navigate('/')} className="back-btn">
-              <ArrowLeft className="btn-icon" />
+            <button onClick={() => navigate('/')} className="auction-details-back-btn">
+              <ArrowLeft className="auction-details-btn-icon" />
               Back to Home
             </button>
           </div>
@@ -142,93 +143,157 @@ const AuctionDetails = () => {
     );
   }
 
+  // Combine images and videos for thumbnail navigation
+  const mediaList = [
+    ...(auction?.images || []),
+    ...(auction?.videos || [])
+  ];
+
+  // Helper to check if media is a video (simple check for .mp4, .webm, .mov, etc.)
+  const isVideo = (url) => {
+    return /\.(mp4|webm|ogg|mov)$/i.test(url);
+  };
+
+  // Main preview: show selected image or video
+  const renderMainPreview = () => {
+    if (mediaList.length === 0) {
+      return <img src="/placeholder-image.jpg" alt="No image" className="auction-details-image" />;
+    }
+    const url = mediaList[selectedMediaIdx];
+    if (isVideo(url)) {
+      return (
+        <video
+          src={url.startsWith('http') ? url : `http://localhost:5001/${url}`}
+          className="auction-details-image"
+          controls
+          style={{ background: '#000' }}
+        />
+      );
+    }
+    return (
+      <img
+        src={url.startsWith('http') ? url : `http://localhost:5001/${url}`}
+        alt={auction.title}
+        className="auction-details-image"
+        onError={(e) => {
+          e.target.src = '/placeholder-image.jpg';
+        }}
+      />
+    );
+  };
+
+  // Slider navigation
+  const handlePrev = () => {
+    setSelectedMediaIdx((prev) => (prev === 0 ? mediaList.length - 1 : prev - 1));
+  };
+  const handleNext = () => {
+    setSelectedMediaIdx((prev) => (prev === mediaList.length - 1 ? 0 : prev + 1));
+  };
+
   return (
     <div className="auction-details-page">
-      <div className="container">
-        <button onClick={() => navigate('/')} className="back-btn">
-          <ArrowLeft className="btn-icon" />
+      <div className="auction-details-container">
+        <button onClick={() => navigate('/')} className="auction-details-back-btn">
+          <ArrowLeft className="auction-details-btn-icon" />
           Back to Auctions
         </button>
 
         <div className="auction-details-grid">
-          {/* Image Section */}
-          <div className="auction-image-section">
-            <div className="auction-image-container">
-              {/* Support multiple images from Cloudinary */}
-              {Array.isArray(auction.images) && auction.images.length > 0 ? (
-                auction.images.map((imgUrl, idx) => (
-                  <img
-                    key={idx}
-                    src={imgUrl.startsWith('http') ? imgUrl : `http://localhost:5001/${imgUrl}`}
-                    alt={auction.title}
-                    className="auction-image"
-                    onError={(e) => {
-                      e.target.src = '/placeholder-image.jpg';
-                    }}
-                  />
-                ))
-              ) : auction.image ? (
-                <img
-                  src={auction.image.startsWith('http') ? auction.image : `http://localhost:5001/${auction.image}`}
-                  alt={auction.title}
-                  className="auction-image"
-                  onError={(e) => {
-                    e.target.src = '/placeholder-image.jpg';
-                  }}
-                />
-              ) : (
-                <img src="/placeholder-image.jpg" alt="No image" className="auction-image" />
-              )}
-              <div className={`auction-status ${getStatusColor(auction.status)}`}>
-                {auction.status.charAt(0).toUpperCase() + auction.status.slice(1)}
+          {/* Image/Video Section + Title/Category */}
+          <div className="auction-details-image-section">
+            <div className="auction-details-slider">
+              <div className="auction-details-main-preview">
+                {renderMainPreview()}
               </div>
-              {auction.featured && (
-                <div className="featured-badge">
-                  Featured
-                </div>
+            </div>
+            <div className="auction-details-thumbnails-row">
+              {mediaList.length > 0 ? (
+                mediaList.map((url, idx) => (
+                  <div
+                    key={idx}
+                    className={`auction-details-thumbnail${selectedMediaIdx === idx ? ' selected' : ''}`}
+                    onClick={() => setSelectedMediaIdx(idx)}
+                  >
+                    {isVideo(url) ? (
+                      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                        <video
+                          src={url.startsWith('http') ? url : `http://localhost:5001/${url}`}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                          muted
+                          preload="metadata"
+                        />
+                        <PlayCircle style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: '#3182ce', background: 'rgba(255,255,255,0.7)', borderRadius: '50%' }} size={32} />
+                      </div>
+                    ) : (
+                      <img
+                        src={url.startsWith('http') ? url : `http://localhost:5001/${url}`}
+                        alt={auction.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                        onError={(e) => {
+                          e.target.src = '/placeholder-image.jpg';
+                        }}
+                      />
+                    )}
+                  </div>
+                ))
+              ) : (
+                <img src="/placeholder-image.jpg" alt="No image" className="auction-details-thumbnail" />
               )}
             </div>
           </div>
 
           {/* Details Section */}
-          <div className="auction-info-section">
-            <div className="auction-header">
-              <h1 className="auction-title">{auction.title}</h1>
-              <p className="auction-category">{auction.category}</p>
+          <div className="auction-details-info-section">
+            <div className="auction-details-header">
+              <h1 className="auction-details-title">{auction.title}</h1>
+              
+            </div>
+              <p className="auction-details-category">{auction.category}</p>
+            <div className="auction-details-stats">
+              <div className="auction-details-stat-card current-bid" style={{ height: 'auto', minHeight: 'unset' }}>
+                <div className="auction-details-stat-content">
+                  <span className="auction-details-stat-label">Current Bid</span>
+                  <span className="auction-details-stat-value">₹{auction.currentBid.toLocaleString('en-IN')}</span>
+                </div>
+              </div>
+
+              <div className="auction-details-stat-card time-left">
+                
+                <div className="auction-details-stat-content">
+                  {/* <Clock className="auction-details-stat-icon" /> */}
+                  <span className="auction-details-stat-label">Time Left</span>
+                  <span className="auction-details-stat-value">{formatTimeLeft(auction)}</span>
+                </div>
+              </div>
+
+              <div className="auction-details-stat-card bid-count">
+                {/* <Gavel className="auction-details-stat-icon" /> */}
+                <div className="auction-details-stat-content">
+                  <span className="auction-details-stat-label">Total Bids</span>
+                  <span className="auction-details-stat-value">{auction.bids?.length || 0}</span>
+                </div>
+              </div>
             </div>
 
-            <div className="auction-stats">
-              <div className="stat-card current-bid">
-                <DollarSign className="stat-icon" />
-                <div className="stat-content">
-                  <span className="stat-label">Current Bid</span>
-                  <span className="stat-value">{formatPrice(auction.currentBid)}</span>
-                </div>
-              </div>
-
-              <div className="stat-card time-left">
-                <Clock className="stat-icon" />
-                <div className="stat-content">
-                  <span className="stat-label">Time Left</span>
-                  <span className="stat-value">{formatTimeLeft(auction)}</span>
-                </div>
-              </div>
-
-              <div className="stat-card bid-count">
-                <Gavel className="stat-icon" />
-                <div className="stat-content">
-                  <span className="stat-label">Total Bids</span>
-                  <span className="stat-value">{auction.bids?.length || 0}</span>
-                </div>
-              </div>
-            </div>
-
+            {/* Auction Participation Code & Type Info */}
+         <div className="auction-details-participation-info">
+  <div className="participation-info-card">
+    <div className="info-section">
+      <span className="info-label">Participation Code</span>
+      <span className="info-value code-highlight">{auction.participationCode || 'N/A'}</span>
+    </div>
+    <div className="info-section">
+      <span className="info-label">Auction Type</span>
+      <span className="info-value type-badge">{auction.type || 'Standard'}</span>
+    </div>
+  </div>
+</div>
             {/* Seller Info */}
-            <div className="seller-info">
-              <User className="seller-icon" />
-              <div className="seller-details">
-                <span className="seller-label">Seller</span>
-                <span className="seller-name">{auction.seller.fullName}</span>
+            <div className="auction-details-seller-info">
+              <User className="auction-details-seller-icon" />
+              <div className="auction-details-seller-details">
+                <span className="auction-details-seller-label">Seller</span>
+                <span className="auction-details-seller-name">{auction.seller.fullName}</span>
               </div>
             </div>
             
@@ -236,14 +301,14 @@ const AuctionDetails = () => {
         </div>
 
         {/* Description Section */}
-        <div className="auction-description">
+        <div className="auction-details-description">
           <h2>Description</h2>
           <p>{auction.description}</p>
         </div>
         {/* Conditional rendering for bidding/participation button */}
         {isOwner ? (
           <button
-            className="add-auction-btn"
+            className="auction-details-action-btn"
             style={{ marginTop: '1rem', display: 'inline-block', width: 'fit-content' }}
             onClick={() => navigate(`/auction/${auction._id}/bid`)}
           >
@@ -251,7 +316,7 @@ const AuctionDetails = () => {
           </button>
         ) : (
           <button
-            className="add-auction-btn"
+            className="auction-details-action-btn"
             style={{ marginTop: '1rem', display: 'inline-block', width: 'fit-content' }}
             onClick={() => navigate(`/auction/${auction._id}/bidder`)}
           >
@@ -260,28 +325,28 @@ const AuctionDetails = () => {
         )}
 
         {/* Bid History */}
-        {auction.bids && auction.bids.length > 0 && (
-          <div className="bid-history">
+        {/* {auction.bids && auction.bids.length > 0 && (
+          <div className="auction-details-bid-history">
             <h2>Bid History</h2>
-            <div className="bid-list">
+            <div className="auction-details-bid-list">
               {auction.bids
                 .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
                 .slice(0, 10)
                 .map((bid, index) => (
-                  <div key={index} className="bid-item">
-                    <div className="bid-user">
-                      <User className="user-icon" />
+                  <div key={index} className="auction-details-bid-item">
+                    <div className="auction-details-bid-user">
+                      <User className="auction-details-user-icon" />
                       <span>{bid.bidder.fullName}</span>
                     </div>
-                    <div className="bid-amount">{formatPrice(bid.amount)}</div>
-                    <div className="bid-time">
+                    <div className="auction-details-bid-amount">{formatPrice(bid.amount)}</div>
+                    <div className="auction-details-bid-time">
                       {new Date(bid.timestamp).toLocaleString()}
                     </div>
                   </div>
                 ))}
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );

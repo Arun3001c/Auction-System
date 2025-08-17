@@ -1,4 +1,4 @@
-.carousel-container {
+ .carousel-container {
   position: relative;
   display: flex;
   align-items: center;
@@ -10,8 +10,10 @@
   min-height: 260px;
   max-width: 100%;
   overflow: hidden;
-  margin: 3px auto;
-}
+  /* margin: 50px auto 50px auto; */
+  gap: 0;
+ }
+
 
 .carousel-slide {
   width: 100%;

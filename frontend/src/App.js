@@ -16,6 +16,7 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import AuctionDetails from './pages/AuctionDetails';
 import AuctionBidPage from './pages/AuctionBidPage.jsx';
+import BidderPage from './pages/BidderPage.jsx';
 import EditAuction from './pages/EditAuction.jsx';
 import AuctionEndedDetails from './pages/AuctionEndedDetails.jsx';
 import CreateAuction from './pages/CreateAuction';
@@ -47,6 +48,7 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/auction/:id" element={<AuctionDetails />} />
                 <Route path="/auction/:id/bid" element={<AuctionBidPage />} />
+                <Route path="/auction/:id/bidder" element={<BidderPage />} />
               <Route path="/create-auction" element={<CreateAuction />} />
               <Route path="/bid" element={<Bid />} />
               <Route path="/profile" element={<Profile />} />

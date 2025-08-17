@@ -144,16 +144,17 @@ const Bid = () => {
       return;
     }
 
-    // Find auction by ID
+    // Find auction by ID or participation code
     const auction = auctions.find(a => 
       a.auctionId?.toLowerCase() === joinAuctionId.toLowerCase() ||
-      a._id === joinAuctionId
+      a._id === joinAuctionId ||
+      a.participationCode === joinAuctionId
     );
 
     if (auction) {
       navigate(`/auction/${auction._id}`);
     } else {
-      toast.error('Auction not found with the provided ID');
+      toast.error('Auction not found with the provided ID or participation code');
     }
   };
 
