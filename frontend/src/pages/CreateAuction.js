@@ -99,6 +99,12 @@ const CreateAuction = () => {
   };
 
   const onSubmit = async (data) => {
+    // Check profile verification before allowing auction creation
+    if (!user?.isEmailVerified || !user?.isPhoneVerified) {
+      toast.error('Please verify your email and phone number to create an auction.');
+      navigate('/profile');
+      return;
+    }
     try {
       if (images.length === 0) {
         toast.error('At least one image is required');

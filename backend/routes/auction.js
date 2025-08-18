@@ -124,6 +124,10 @@ router.put('/:id/endtime', auth, async (req, res) => {
   }
 });
 
+
+// Get winner notifications (auctions won by user)
+router.get('/user/winner-notifications', auth, winnerController.getWinnerNotifications);
+
 // Get user's participated bid history
 router.get('/user/participated-bids', auth, bidHistoryController.getParticipatedBidHistory);
 

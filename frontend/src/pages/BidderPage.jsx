@@ -17,9 +17,12 @@ const BidderPage = () => {
 
   useEffect(() => {
     fetchAuctionDetails();
-    fetchUserBidHistory();
+    // Only fetch bid history when user is loaded
+    if (user && user._id) {
+      fetchUserBidHistory();
+    }
     // eslint-disable-next-line
-  }, [id]);
+  }, [id, user]);
   // Fetch user's bid history for this auction
   const fetchUserBidHistory = async () => {
     try {
@@ -112,19 +115,37 @@ const BidderPage = () => {
   };
 
   const formatTimeLeft = (auction) => {
+    if (!auction) return '--';
     const now = new Date();
-    let target;
+    let target = null;
     let label = '';
-    if (auction?.status === 'upcoming') {
-      target = new Date(auction?.startTime || auction?.startDate);
+    // Use startDate/endDate if startTime/endTime are missing
+    if (auction.status === 'upcoming') {
+      if (auction.startTime) {
+        target = new Date(auction.startTime);
+      } else if (auction.startDate) {
+        target = new Date(auction.startDate);
+      }
       label = 'Starts in';
     } else {
-      target = new Date(auction?.endTime || auction?.endDate);
+      if (auction.endTime) {
+        target = new Date(auction.endTime);
+      } else if (auction.endDate) {
+        target = new Date(auction.endDate);
+      }
       label = 'Ends in';
     }
-    if (!target || isNaN(target.getTime())) return 'Unknown';
+    // If still no valid date, try fallback to auction.startDate/endDate
+    if (!target || isNaN(target.getTime())) {
+      if (auction.status === 'upcoming' && auction.startDate) {
+        target = new Date(auction.startDate);
+      } else if (auction.endDate) {
+        target = new Date(auction.endDate);
+      }
+    }
+    if (!target || isNaN(target.getTime())) return '--';
     const diff = target - now;
-    if (diff <= 0) return auction?.status === 'upcoming' ? 'Started' : 'Ended';
+    if (diff <= 0) return auction.status === 'upcoming' ? 'Started' : 'Ended';
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -135,6 +156,22 @@ const BidderPage = () => {
 
   if (loading) return <div>Loading...</div>;
   if (!auction) return <div>Auction not found</div>;
+  // Prevent access if user is not verified
+  if (user && (!user.isEmailVerified || !user.isPhoneVerified)) {
+    return (
+      <div className="auction-details-page">
+        <div className="container">
+          <div style={{marginTop: '2rem', color: '#ef4444', fontWeight: 600, fontSize: '1.2rem', textAlign: 'center'}}>
+            You must verify your email and phone number to participate in bidding.<br />
+            <button
+              style={{marginTop: '1rem', background: '#6366f1', color: 'white', padding: '0.5rem 1.5rem', borderRadius: '6px', fontWeight: 500, border: 'none', cursor: 'pointer'}}
+              onClick={() => navigate('/profile')}
+            >Go to Profile Verification</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Safe fallback for missing fields
   const auctionTitle = auction.title || 'No Title';
@@ -197,42 +234,16 @@ const BidderPage = () => {
               <img 
                 src={auctionImage}
                 alt={auctionTitle}
-                style={{ width: '100%', maxWidth: '500px', height: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto' }}
+                style={{ width: '100%', maxWidth: '500px', height: '100%', objectFit: 'contain', display: 'block', margin: '0 auto' }}
                 onError={(e) => {
                   e.target.src = '/placeholder-image.jpg';
                 }}
               />
             </div>
-            {/* User Bid History Section - moved below image */}
-            <div className="auction-details-bid-history-section">
-              <h3>Your Bid History</h3>
-              {userBidHistory.length === 0 ? (
-                <div className="auction-details-no-bid-history">No bids placed yet.</div>
-              ) : (
-                <table className="auction-details-bid-history-table">
-                  <thead>
-                    <tr>
-                      <th>Amount</th>
-                      <th>Time</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {userBidHistory.map((bid, idx) => (
-                      <tr key={bid._id || idx}>
-                        <td>{formatPrice(bid.amount)}</td>
-                        <td>{
-                          bid.createdAt && !isNaN(new Date(bid.createdAt).getTime())
-                            ? new Date(bid.createdAt).toLocaleString()
-                            : 'Unknown'
-                        }</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+           
           </div>
-
+           
+          
           {/* Details Section */}
           <div className="auction-details-info-section">
             <div className="auction-details-stats">
@@ -243,14 +254,42 @@ const BidderPage = () => {
                   <span className="auction-details-stat-value">{formatPrice(auction.startingPrice || 0)}</span>
                 </div>
               </div>
-              <div className="auction-details-stat-card auction-details-current-bid">
-                <DollarSign className="auction-details-stat-icon" />
-                <div className="auction-details-stat-content">
-                  <span className="auction-details-stat-label">Current Bid</span>
-                  <span className="auction-details-stat-value">{formatPrice(auction.currentBid || 0)}</span>
+              {auction.auctionType === 'reserve' ? (
+                <div className="auction-details-stat-card auction-details-current-bid">
+                  <DollarSign className="auction-details-stat-icon" />
+                  <div className="auction-details-stat-content">
+                    <span className="auction-details-stat-label">Your Highest Bid</span>
+                    <span className="auction-details-stat-value">
+                      {(() => {
+                        if (!userBidHistory || userBidHistory.length === 0) return formatPrice(0);
+                        const highestBid = userBidHistory.reduce((max, bid) => bid.amount > max.amount ? bid : max, userBidHistory[0]);
+                        return formatPrice(highestBid.amount);
+                      })()}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="auction-details-stat-card auction-details-current-bid">
+                  <DollarSign className="auction-details-stat-icon" />
+                  <div className="auction-details-stat-content">
+                    <span className="auction-details-stat-label">Current Bid</span>
+                    <span className="auction-details-stat-value">{formatPrice(auction.currentBid || 0)}</span>
+                  </div>
+                </div>
+              )}
+              {/* Reserved Amount for reserve auctions */}
+              {auction.auctionType === 'reserve' && auction.reservedAmount && (
+                <div className="auction-details-stat-card auction-details-reserved-amount">
+                  <DollarSign className="auction-details-stat-icon" />
+                  <div className="auction-details-stat-content">
+                    <span className="auction-details-stat-label">Reserved Amount</span>
+                    <span className="auction-details-stat-value">{formatPrice(auction.reservedAmount)}</span>
+                  </div>
+                </div>
+              )}
             </div>
+
+             
             {/* Conditional Bid UI */}
             {auction.auctionType !== 'reserve' ? (
               <form
@@ -277,6 +316,7 @@ const BidderPage = () => {
                 >
                   {bidLoading ? 'Placing Bid...' : 'Place Bid'}
                 </button>
+
                 {bidError && <div style={{ color: 'red', marginTop: '8px' }}>{bidError}</div>}
               </form>
             ) : (
@@ -287,6 +327,39 @@ const BidderPage = () => {
               </div>
             )}
           </div>
+
+            {/* User Bid History Section - moved below image */}
+            <div className="auction-details-bid-history-section">
+              <h3>Your Bid History</h3>
+              {userBidHistory.length === 0 ? (
+                <div className="auction-details-no-bid-history">No bids placed yet.</div>
+              ) : (
+                <table className="auction-details-bid-history-table">
+                  <thead>
+                    <tr>
+                      <th>Amount</th>
+                      <th>Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {userBidHistory.map((bid, idx) => (
+                      <tr key={bid._id || idx}>
+                        <td>{formatPrice(bid.amount)}</td>
+                        <td>{
+                          (bid.createdAt && !isNaN(new Date(bid.createdAt).getTime()))
+                            ? new Date(bid.createdAt).toLocaleString()
+                            : (bid.timestamp && !isNaN(new Date(bid.timestamp).getTime()))
+                              ? new Date(bid.timestamp).toLocaleString()
+                              : 'Unknown'
+                        }</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              {/* For reserve auctions, show only user's bid history, not global bid list */}
+            </div>
+
         </div>
       </div>
     </div>

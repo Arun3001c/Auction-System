@@ -10,7 +10,8 @@ const MyBids = () => {
   const [tab, setTab] = useState('active');
   const [expandedAuction, setExpandedAuction] = useState(null);
   const [expandedBids, setExpandedBids] = useState({});
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState(null);
+  const [showWonClicked, setShowWonClicked] = useState(false);
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
@@ -142,10 +143,11 @@ const MyBids = () => {
       {/* Notifications Section */}
     </div>
     <div className="notifications-section" style={{ marginTop: '2rem' }}>
-      <h3 style={{ marginBottom: '1rem' }}>Notifications</h3>
+      <h3 style={{ marginBottom: '1rem' }}>Auctions Won</h3>
       <button
         style={{ background: '#6366f1', color: 'white', padding: '0.5rem 1rem', borderRadius: '6px', fontWeight: 500, marginBottom: '1rem' }}
         onClick={async () => {
+          setShowWonClicked(true);
           const token = localStorage.getItem('token');
           try {
             const res = await axios.get('/api/auctions/user/winner-notifications', {
@@ -160,21 +162,24 @@ const MyBids = () => {
             setNotifications([]);
           }
         }}
-      >Show Winner Notifications</button>
-      {notifications.length === 0 ? (
-        <div style={{ color: '#888' }}>You have not won any auction.</div>
-      ) : (
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {notifications.map(n => (
-            <li key={n._id} style={{ background: '#f3f4f6', marginBottom: '1rem', padding: '1rem', borderRadius: '8px' }}>
-              <div><strong>Auction:</strong> {n.auction?.title || 'Unknown'}</div>
-              <div><strong>Winning Bid:</strong> ${n.amount}</div>
-              <div><strong>Your Details:</strong> {n.fullName} | {n.email} | {n.phone}</div>
-              <div><strong>Time:</strong> {n.createdAt ? new Date(n.createdAt).toLocaleString() : 'Unknown'}</div>
-            </li>
-          ))}
-        </ul>
-      )}
+      >Show Auctions Won</button>
+      {/* Only show results after button is clicked */}
+      {showWonClicked && notifications !== null ? (
+        notifications.length === 0 ? (
+          <div style={{ color: '#888' }}>You have not won any auction.</div>
+        ) : (
+          <ul style={{ listStyle: 'none', padding: 0 }}>
+            {notifications.map(n => (
+              <li key={n._id} style={{ background: '#f3f4f6', marginBottom: '1rem', padding: '1rem', borderRadius: '8px' }}>
+                <div><strong>Auction:</strong> {n.auction?.title || 'Unknown'}</div>
+                <div><strong>Winning Bid:</strong> ${n.amount}</div>
+                <div><strong>Your Details:</strong> {n.fullName} | {n.email} | {n.phone}</div>
+                <div><strong>Time:</strong> {n.createdAt ? new Date(n.createdAt).toLocaleString() : 'Unknown'}</div>
+              </li>
+            ))}
+          </ul>
+        )
+      ) : null}
     </div>
     </>
   );
