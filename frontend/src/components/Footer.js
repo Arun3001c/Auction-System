@@ -1,8 +1,15 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Gavel, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
-
+import { Envelope } from 'phosphor-react';
 const Footer = () => {
+  const navigate = useNavigate();
+
+  const handleCategoryClick = (category) => {
+    navigate(`/?category=${encodeURIComponent(category)}`);
+    window.scrollTo(0, 0);
+  };
+
   return (
     <footer className="footer">
       <div className="footer-container">
@@ -17,7 +24,7 @@ const Footer = () => {
               Your trusted platform for online auctions. Discover amazing deals 
               and bid on unique items from verified sellers worldwide.
             </p>
-            <div className="social-links">
+            {/* <div className="social-links">
               <a href="#" className="social-link" aria-label="Facebook">
                 <Facebook />
               </a>
@@ -30,7 +37,22 @@ const Footer = () => {
               <a href="#" className="social-link" aria-label="LinkedIn">
                 <Linkedin />
               </a>
+            </div> */}
+
+          <div className="dev-team">
+            <p className="footer-description">Developed by</p>
+            <div className="dev-links">
+              <span></span>
+                  <a href="https://www.linkedin.com/in/pallavi-motamarri-3350b226a/" target="_blank">👩‍💻 Pallavi</a>
+                  <span>|</span>
+                  <a href="https://www.linkedin.com/in/venkatesh-mamidala-17b38426a/" target="_blank">👨‍💻 Venky</a>
+                  <br/>
+                  <a href="https://www.linkedin.com/in/nivas-sharma-77441b362/" target="_blank">👨‍💻 Nivas</a>
+                  <span>|</span>
+                  <a href="https://github.com/Arun3001c" target="_blank">👨‍💻 Arun</a>
             </div>
+          </div>
+
           </div>
 
           {/* Quick Links */}
@@ -40,9 +62,9 @@ const Footer = () => {
               <li><Link to="/">Home</Link></li>
               <li><Link to="/about">About Us</Link></li>
               <li><Link to="/contact">Contact</Link></li>
-              <li><a href="#">How It Works</a></li>
-              <li><a href="#">Terms of Service</a></li>
-              <li><a href="#">Privacy Policy</a></li>
+              <li><Link to="/about">How It Works</Link></li>
+                <li><Link to="/terms">Terms of Service</Link></li>
+              {/* <li><a href="#">Privacy Policy</a></li> */}
             </ul>
           </div>
 
@@ -50,12 +72,11 @@ const Footer = () => {
           <div className="footer-section">
             <h3 className="footer-title">Categories</h3>
             <ul className="footer-links">
-              <li><a href="#">Electronics</a></li>
-              <li><a href="#">Art & Collectibles</a></li>
-              <li><a href="#">Jewelry</a></li>
-              <li><a href="#">Vehicles</a></li>
-              <li><a href="#">Fashion</a></li>
-              <li><a href="#">Sports</a></li>
+              <li><button className="footer-link-btn" onClick={() => handleCategoryClick('Electronics')}>Electronics</button></li>
+              <li><button className="footer-link-btn" onClick={() => handleCategoryClick('Art')}>Art & Collectibles</button></li>
+              <li><button className="footer-link-btn" onClick={() => handleCategoryClick('Jewelry')}>Jewelry</button></li>
+              <li><button className="footer-link-btn" onClick={() => handleCategoryClick('Vehicles')}>Vehicles</button></li>
+              <li><button className="footer-link-btn" onClick={() => handleCategoryClick('Fashion')}>Fashion</button></li>
             </ul>
           </div>
 
@@ -64,16 +85,17 @@ const Footer = () => {
             <h3 className="footer-title">Contact Info</h3>
             <div className="contact-info">
               <div className="contact-item">
-                <Mail className="contact-icon" />
-                <span>support@auctionhub.com</span>
+                {/* <Mail className="contact-icon" /> */}
+                 {/* <Envelope size={32} color="blue" weight="fill" /> */}
+                <span>arunk330840@gmail.com</span>
               </div>
-              <div className="contact-item">
+              {/* <div className="contact-item">
                 <Phone className="contact-icon" />
                 <span>+1 (555) 123-4567</span>
-              </div>
+              </div> */}
               <div className="contact-item">
                 <MapPin className="contact-icon" />
-                <span>123 Auction Street, NY 10001</span>
+                <span>1-32 vvit college road, Namburu 522508</span>
               </div>
             </div>
           </div>

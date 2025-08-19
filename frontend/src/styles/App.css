@@ -876,6 +876,21 @@
   margin-bottom: 12px;
 }
 
+
+.footer-link-btn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+  transition: color 0.2s;
+}
+.footer-link-btn:hover {
+  color: #3182ce;
+  text-decoration: underline;
+}
 .footer-links a {
   color: #9ca3af;
   text-decoration: none;
@@ -898,6 +913,7 @@
   gap: 12px;
   color: #9ca3af;
 }
+
 
 .contact-icon {
   width: 20px;
@@ -940,6 +956,59 @@
     text-align: center;
   }
 }
+
+/* .dev-team {
+  text-align: center;
+  padding: 25px;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: #e2e8f0;
+  font-family: 'Poppins', sans-serif;
+  border-top: 1px solid #334155;
+} */
+
+/* .footer-description {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: #cbd5e1;
+  letter-spacing: 1px;
+} */
+
+.dev-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+
+.dev-links a {
+  position: relative;
+  text-decoration: none;
+  color: #f472b6; /* pink accent */
+  font-weight: 600;
+  font-size: 16px;
+  transition: color 0.3s ease;
+}
+
+.dev-links a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 0%;
+  height: 2px;
+  background: #f472b6;
+  transition: width 0.3s ease;
+}
+
+.dev-links a:hover {
+  color: #fb7185; /* brighter pink */
+}
+
+.dev-links a:hover::after {
+  width: 100%;
+}
+
 
 /* Home Page Styles */
 .home-page {

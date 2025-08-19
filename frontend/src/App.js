@@ -26,6 +26,8 @@ import MyAuctions from './pages/MyAuctions.jsx';
 import DeletedAuctions from './pages/DeletedAuctions.jsx';
 import MyBids from './pages/MyBids.jsx';
 import MyContacts from './pages/MyContacts.jsx';
+import Terms from './pages/Terms';
+
 
 // Utils
 import { AuthProvider } from './utils/AuthContext';
@@ -59,6 +61,7 @@ function App() {
                 <Route path="/dashboard/edit-auction/:id" element={<EditAuction />} />
                 <Route path="/dashboard/auction-ended-details/:id" element={<AuctionEndedDetails />} />
                 <Route path="/dashboard/deleted-auctions" element={<DeletedAuctions />} />
+              <Route path="/terms" element={<Terms />} />
             </Routes>
           </main>
           <Footer />

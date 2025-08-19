@@ -257,8 +257,9 @@ router.get('/categories', async (req, res) => {
       'Jewelry',
       'Vehicles',
       'Fashion',
-      'Sports',
+      'Home & Garden',
       'Books',
+      'Automotive',
       'Other'
     ];
 

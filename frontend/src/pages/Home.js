@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Search, Filter, RefreshCw } from 'lucide-react';
 import AuctionCard from '../components/AuctionCard';
 import api from '../utils/api';
 import { toast } from 'react-toastify';
 
+
 const Home = () => {
+  const location = useLocation();
   const [auctions, setAuctions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,6 +16,16 @@ const Home = () => {
     search: '',
     status: 'active'
   });
+
+  // On mount, sync category from query param
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const category = params.get('category');
+    if (category && category !== filters.category) {
+      setFilters(prev => ({ ...prev, category }));
+    }
+    // eslint-disable-next-line
+  }, [location.search]);
 
   useEffect(() => {
     fetchAuctions();
@@ -194,7 +207,7 @@ const Home = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="stats-section">
+      {/* <section className="stats-section">
         <div className="container">
           <div className="stats-grid">
             <div className="stat-card">
@@ -215,7 +228,7 @@ const Home = () => {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
     </div>
   );
 };

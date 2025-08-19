@@ -9,6 +9,7 @@
     "ajv": "^8.17.1",
     "axios": "^1.5.0",
     "lucide-react": "^0.263.1",
+    "phosphor-react": "^1.4.1",
     "react": "^18.2.0",
     "react-countdown": "^2.3.5",
     "react-dom": "^18.2.0",

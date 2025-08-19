@@ -171,7 +171,7 @@ const MyBids = () => {
           <ul style={{ listStyle: 'none', padding: 0 }}>
             {notifications.map(n => (
               <li key={n._id} style={{ background: '#f3f4f6', marginBottom: '1rem', padding: '1rem', borderRadius: '8px' }}>
-                <div><strong>Auction:</strong> {n.auction?.title || 'Unknown'}</div>
+                <div><strong>Auction:</strong> {n.auction && typeof n.auction === 'object' ? n.auction.title : 'Unknown'}</div>
                 <div><strong>Winning Bid:</strong> ${n.amount}</div>
                 <div><strong>Your Details:</strong> {n.fullName} | {n.email} | {n.phone}</div>
                 <div><strong>Time:</strong> {n.createdAt ? new Date(n.createdAt).toLocaleString() : 'Unknown'}</div>

@@ -19,7 +19,7 @@ const auctionSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['Electronics', 'Fashion', 'Home & Garden', 'Sports', 'Collectibles', 'Art', 'Books', 'Music', 'Toys', 'Automotive', 'Other']
+    enum: ['Electronics', 'Fashion', 'Home & Garden', 'Collectibles', 'Art', 'Books', 'Jewelry', 'Vehicles', 'Automotive', 'Other']
   },
   auctionType: {
     type: String,

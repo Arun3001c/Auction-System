@@ -34,8 +34,7 @@ const About = () => {
             </div>
             <div className="mission-image">
               <div className="image-placeholder">
-                <Zap className="placeholder-icon" />
-                <p>Mission Image Placeholder</p>
+                <img style={{ width: '100%',height:"100%", borderRadius: '12px' }} src="https://res.cloudinary.com/dhjbphutc/image/upload/v1755540732/auction__about_us_u8ujcg.jpg" alt="Our Mission" />
               </div>
             </div>
           </div>
