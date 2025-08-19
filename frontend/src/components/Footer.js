@@ -102,7 +102,7 @@ const Footer = () => {
         </div>
 
         {/* Footer Bottom */}
-        <div className="footer-bottom">
+        {/* <div className="footer-bottom">
           <div className="footer-bottom-content">
             <p>&copy; 2024 Auction Hub. All rights reserved.</p>
             <div className="footer-bottom-links">
@@ -111,7 +111,7 @@ const Footer = () => {
               <a href="#">Cookies</a>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </footer>
   );

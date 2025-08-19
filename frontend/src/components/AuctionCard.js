@@ -92,7 +92,11 @@ const getCurrencyInfo = (currency) => currencyLocaleMap[currency] || { locale: '
   return (
     <div className="auction-card">
       <div className="auction-image-container">
-        <ImageCarousel images={auction.images || (auction.image ? [auction.image] : [])} alt={auction.title} />
+        {/* Combine images and video for carousel */}
+        <ImageCarousel
+          images={[...(auction.images || (auction.image ? [auction.image] : [])), ...(auction.video ? [auction.video] : [])]}
+          alt={auction.title}
+        />
         <div className={`auction-status ${getStatusColor(auction.status)}`}>
           {auction.status.charAt(0).toUpperCase() + auction.status.slice(1)}
         </div>

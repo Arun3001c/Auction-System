@@ -20,11 +20,11 @@ const storage = multer.diskStorage({
 
 // File filter
 const fileFilter = (req, file, cb) => {
-  // Check file type
-  if (file.mimetype.startsWith('image/')) {
+  // Allow images and videos for auction upload
+  if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
     cb(null, true);
   } else {
-    cb(new Error('Only image files are allowed!'), false);
+    cb(new Error('Only image and video files are allowed!'), false);
   }
 };
 

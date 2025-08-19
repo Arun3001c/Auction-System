@@ -173,16 +173,14 @@ const About = () => {
           <h2 className="section-title">Our Story</h2>
           <div className="story-content">
             <p>
-              Founded in 2024, Auction Hub was born from a simple idea: make online 
-              auctions more accessible, secure, and enjoyable for everyone. Our team 
-              of passionate developers and auction enthusiasts worked tirelessly to 
+              Founded in 2025, Auction Hub was born from a simple idea on fixing the end to end project title : make online 
+              auctions more accessible, secure, and enjoyable for everyone. Our team — Pallavi, Nivas, Venky, and Arun 
+             a group of passionate developers and auction enthusiasts, worked to 
               create a platform that combines cutting-edge technology with the timeless 
               excitement of auctions.
             </p>
             <p>
-              Today, we're proud to serve thousands of users worldwide, facilitating 
-              millions of dollars in transactions while maintaining the highest standards 
-              of security and user experience. We're constantly innovating and improving 
+              Today, We're constantly innovating and improving 
               our platform to serve our community better.
             </p>
           </div>
@@ -195,7 +193,7 @@ const About = () => {
           <div className="cta-content">
             <h2>Ready to Start Your Auction Journey?</h2>
             <p>
-              Join thousands of satisfied users and discover amazing deals today!
+              Join Hundreds of satisfied users and discover amazing deals today!
             </p>
             <div className="cta-buttons">
               <a href="/register" className="cta-btn primary">

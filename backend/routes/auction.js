@@ -316,7 +316,8 @@ router.get('/search/:query', async (req, res) => {
       status: { $ne: 'deleted' },
       $or: [
         { title: { $regex: query, $options: 'i' } },
-        { description: { $regex: query, $options: 'i' } }
+        { description: { $regex: query, $options: 'i' } },
+        { participationCode: { $regex: query, $options: 'i' } }
       ]
     };
     if (category && category !== 'all') {

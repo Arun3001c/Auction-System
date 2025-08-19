@@ -404,7 +404,7 @@
 }
 
 .navbar-container {
-  max-width: 1200px;
+  max-width: 1350px;
   margin: 0 auto;
   padding: 0 20px;
   display: flex;
@@ -528,6 +528,10 @@
   height: 20px;
   color: #374151;
 }
+
+
+
+
 
 /* Side Menu */
 .side-menu-overlay {

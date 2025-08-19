@@ -144,9 +144,10 @@ const AuctionDetails = () => {
   }
 
   // Combine images and videos for thumbnail navigation
+  // Combine images and video for thumbnail navigation
   const mediaList = [
     ...(auction?.images || []),
-    ...(auction?.videos || [])
+    ...(auction?.video ? [auction.video] : [])
   ];
 
   // Helper to check if media is a video (simple check for .mp4, .webm, .mov, etc.)

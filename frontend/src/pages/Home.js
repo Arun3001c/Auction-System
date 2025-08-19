@@ -21,12 +21,34 @@ const Home = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const category = params.get('category');
+    const participationCode = params.get('participationCode');
     if (category && category !== filters.category) {
       setFilters(prev => ({ ...prev, category }));
+    }
+    if (participationCode) {
+      fetchAuctionByParticipationCode(participationCode);
     }
     // eslint-disable-next-line
   }, [location.search]);
 
+  // Fetch auction by participation code
+  const fetchAuctionByParticipationCode = async (code) => {
+    try {
+      setLoading(true);
+      const response = await api.get(`/auctions/participation/${encodeURIComponent(code)}`);
+      if (response.data && response.data.auction) {
+        setAuctions([response.data.auction]);
+      } else {
+        setAuctions([]);
+        toast.error('No auction found for this participation ID');
+      }
+    } catch (error) {
+      setAuctions([]);
+      toast.error('No auction found for this participation ID');
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
     fetchAuctions();
     fetchCategories();

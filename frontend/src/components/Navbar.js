@@ -9,6 +9,7 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchType, setSearchType] = useState('participation'); // default to participation
 
   const handleLogout = () => {
     logout();
@@ -36,7 +37,11 @@ const Navbar = () => {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/?search=${encodeURIComponent(searchQuery.trim())}`);
+      if (searchType === 'participation') {
+        navigate(`/?participationCode=${encodeURIComponent(searchQuery.trim())}`);
+      } else {
+        navigate(`/?search=${encodeURIComponent(searchQuery.trim())}`);
+      }
       setSearchQuery('');
     }
   };
@@ -50,20 +55,24 @@ const Navbar = () => {
         </Link>
 
         {/* Search Bar - Only visible when logged in */}
-        {isAuthenticated && (
+        {/* {isAuthenticated && (
           <form className="navbar-search" onSubmit={handleSearch}>
             <div className="search-input-wrapper">
               <Search className="search-icon" />
               <input
                 type="text"
-                placeholder="Search auctions..."
+                placeholder={searchType === 'participation' ? "Enter Participation ID..." : "Search auctions..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="navbar-search-input"
               />
+              <select value={searchType} onChange={e => setSearchType(e.target.value)} className="navbar-search-type">
+                <option value="participation">Participation ID</option>
+                <option value="title">Title</option>
+              </select>
             </div>
           </form>
-        )}
+        )} */}
 
         <div className={`navbar-menu ${isMenuOpen ? 'active' : ''}`}>
           {isAuthenticated ? (
