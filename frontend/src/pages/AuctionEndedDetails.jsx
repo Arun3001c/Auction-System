@@ -51,19 +51,25 @@ const AuctionEndedDetails = () => {
       <div className="participants-section">
         <h3>Participants</h3>
         <ul>
-          {[...new Set(auction.bids.map(bid => bid.bidder.fullName))].map((name, idx) => (
-            <li key={idx}><User /> {name}</li>
-          ))}
+            {[...new Set(
+              auction.bids
+                .filter(bid => bid.bidder && bid.bidder.fullName)
+                .map(bid => bid.bidder.fullName)
+            )].map((name, idx) => (
+              <li key={idx}><User /> {name}</li>
+            ))}
         </ul>
       </div>
       <div className="bid-history-section">
         <h3>Bidding History</h3>
         <ul>
-          {auction.bids.map((bid, idx) => (
-            <li key={idx}>
-              <User /> {bid.bidder.fullName} - ${bid.amount} at {new Date(bid.timestamp).toLocaleString()}
-            </li>
-          ))}
+            {auction.bids
+              .filter(bid => bid.bidder && bid.bidder.fullName)
+              .map((bid, idx) => (
+                <li key={idx}>
+                  <User /> {bid.bidder.fullName} - ${bid.amount} at {new Date(bid.timestamp).toLocaleString()}
+                </li>
+              ))}
         </ul>
       </div>
     </div>

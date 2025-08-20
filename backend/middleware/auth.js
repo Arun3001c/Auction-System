@@ -4,19 +4,20 @@ const User = require('../models/User');
 const auth = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
-    
     if (!token) {
       return res.status(401).json({ message: 'No token provided, authorization denied' });
     }
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.userId).select('-password');
-    
-    if (!user) {
+    let userOrAdmin;
+    if (decoded.role === 'admin') {
+      userOrAdmin = await require('../models/Admin').findById(decoded.id).select('-password');
+    } else {
+      userOrAdmin = await User.findById(decoded.userId || decoded.id).select('-password');
+    }
+    if (!userOrAdmin) {
       return res.status(401).json({ message: 'Token is not valid' });
     }
-
-    req.user = user;
+    req.user = userOrAdmin;
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);

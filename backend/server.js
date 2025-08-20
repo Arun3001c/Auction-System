@@ -12,6 +12,20 @@
   const authRoutes = require('./routes/auth');
   const auctionRoutes = require('./routes/auction');
   const contactRoutes = require('./routes/contact');
+  const adminAuctionRoutes = require('./routes/adminAuction');
+  const adminUserRoutes = require('./routes/adminUser');
+  const adminAuthRoutes = require('./routes/adminAuth');
+
+  // Diagnostic logging for route types
+  function logRouteType(name, route) {
+    console.log(`${name} type:`, typeof route, Array.isArray(route) ? 'Array' : (route && route.stack ? 'Router' : 'Object'));
+  }
+  logRouteType('authRoutes', authRoutes);
+  logRouteType('auctionRoutes', auctionRoutes);
+  logRouteType('contactRoutes', contactRoutes);
+  logRouteType('adminAuctionRoutes', adminAuctionRoutes);
+  logRouteType('adminUserRoutes', adminUserRoutes);
+  logRouteType('adminAuthRoutes', adminAuthRoutes);
 
   const app = express();
 
@@ -35,6 +49,9 @@
   app.use('/api/auth', authRoutes);
   app.use('/api/auctions', auctionRoutes);
   app.use('/api/contact', contactRoutes);
+  app.use('/api/admin/auctions', adminAuctionRoutes);
+  app.use('/api/admin/users', adminUserRoutes);
+  app.use('/api/admin/auth', adminAuthRoutes);
 
   // Test route
   app.get('/api/test', (req, res) => {

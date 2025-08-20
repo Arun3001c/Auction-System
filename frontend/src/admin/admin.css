@@ -1,0 +1,224 @@
+
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #f6f8fa;
+}
+
+
+.admin-container {
+  min-height: 100vh;
+  background: #f6f8fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.admin-main-content {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.admin-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  padding: 2rem 2.5rem;
+  max-width: 420px;
+  width: 100%;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+
+.admin-card h2 {
+  margin-bottom: 1.2rem;
+  color: #222;
+  font-weight: 600;
+  font-size: 1.7rem;
+  text-align: center;
+}
+
+
+.admin-card input {
+  width: 100%;
+  padding: 0.8rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid #e3e8ee;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: #fff;
+  transition: border-color 0.2s;
+}
+.admin-card input:focus {
+  border-color: #3867d6;
+  outline: none;
+}
+
+
+.admin-card button {
+  width: 100%;
+  padding: 0.8rem;
+  background: #3867d6;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.admin-card button:hover {
+  background: #274b8c;
+}
+
+
+.admin-card a {
+  color: #3867d6;
+  text-decoration: underline;
+  font-size: 0.95rem;
+  text-align: right;
+  margin-top: 0.5rem;
+  display: block;
+}
+
+
+.admin-card .error {
+  color: #d63031;
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  text-align: center;
+}
+.admin-card .success {
+  color: #00b894;
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  text-align: center;
+}
+
+
+@media (max-width: 600px) {
+  .admin-card {
+    padding: 1.2rem 0.5rem;
+    max-width: 98vw;
+  }
+  .admin-main-content {
+    padding: 0 0.5rem;
+  }
+}
+
+
+/* Pleasant and simple UI adjustments */
+body, html {
+  background: #f6f8fa;
+}
+.admin-container {
+  background: #f6f8fa;
+  padding: 0;
+}
+.admin-main-content {
+  min-height: 100vh;
+}
+.admin-card {
+  box-shadow: 0 2px 16px rgba(60, 100, 180, 0.08);
+  border-radius: 14px;
+  padding: 2rem 2.5rem;
+  max-width: 400px;
+  gap: 1rem;
+}
+.admin-card h2 {
+  font-size: 1.7rem;
+  font-weight: 600;
+  color: #222;
+}
+.admin-card input {
+  padding: 0.8rem;
+  border-radius: 8px;
+  border: 1px solid #e3e8ee;
+  background: #fff;
+  font-size: 1rem;
+}
+.admin-card button {
+  padding: 0.8rem;
+  border-radius: 8px;
+  background: #3867d6;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+  border: none;
+  box-shadow: none;
+  transition: background 0.2s;
+}
+.admin-card button:hover {
+  background: #274b8c;
+}
+.admin-card a {
+  color: #3867d6;
+  font-size: 0.95rem;
+  text-align: right;
+  margin-top: 0.5rem;
+}
+.admin-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  padding: 2rem 2.5rem;
+  max-width: 420px;
+  width: 100%;
+  margin: auto;
+}
+
+.admin-card h2 {
+  margin-bottom: 1.5rem;
+  color: #2d3436;
+  font-weight: 600;
+}
+
+.admin-card input {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid #dfe6e9;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.admin-card button {
+  width: 100%;
+  padding: 0.75rem;
+  background: #6a89cc;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.admin-card button:hover {
+  background: #3867d6;
+}
+
+.admin-card a {
+  color: #3867d6;
+  text-decoration: underline;
+  font-size: 0.95rem;
+}
+
+.admin-card .error {
+  color: #d63031;
+  margin-top: 0.5rem;
+}
+
+.admin-card .success {
+  color: #00b894;
+  margin-top: 0.5rem;
+}

@@ -142,7 +142,7 @@ const MyBids = () => {
       )}
       {/* Notifications Section */}
     </div>
-    <div className="notifications-section" style={{ marginTop: '2rem' }}>
+    <div className="notifications-section" style={{ marginTop: '2rem', padding: '1rem', background: '#f9fafb', borderRadius: '8px', marginBottom: '2rem' }}>
       <h3 style={{ marginBottom: '1rem' }}>Auctions Won</h3>
       <button
         style={{ background: '#6366f1', color: 'white', padding: '0.5rem 1rem', borderRadius: '6px', fontWeight: 500, marginBottom: '1rem' }}
