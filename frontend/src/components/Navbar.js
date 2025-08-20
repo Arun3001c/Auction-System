@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../utils/AuthContext';
-import { User, LogOut, Menu, X, Gavel, Search, Plus, Hammer, UserCircle, Home, MessageCircle } from 'lucide-react';
+import { User, LogOut, Menu, X, Gavel, Search, Plus, Hammer, UserCircle, Home, MessageCircle, Crown } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
@@ -181,6 +181,11 @@ const Navbar = () => {
                     <MessageCircle className="side-menu-icon" />
                     My Contacts
                   </Link>
+                    <Link to="/crown-score" className="side-menu-link" onClick={closeSideMenu}>
+                      <Crown className="side-menu-icon" />
+                      Crown Score
+                    </Link>
+                  
               </nav>
               
               <button className="side-menu-logout" onClick={handleLogout}>
@@ -214,6 +219,14 @@ const Navbar = () => {
                   <UserCircle className="mobile-icon" />
                   Profile
                 </Link>
+                  <Link to="/my-contacts" className="navbar-link" onClick={closeMenu}>
+                    <MessageCircle className="nav-icon" />
+                    My Contacts
+                  </Link>
+                  <Link to="/crown-score" className="navbar-link" onClick={closeMenu}>
+                    <Crown className="nav-icon" />
+                    Crown Score
+                  </Link>
                 <Link to="/contact" className="mobile-link" onClick={closeMenu}>
                   <MessageCircle className="mobile-icon" />
                   Contact

@@ -82,6 +82,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['user', 'admin'],
     default: 'user'
+  },
+  crownScore: {
+    type: Number,
+    default: 100
   }
 }, {
   timestamps: true

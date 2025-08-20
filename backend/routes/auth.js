@@ -122,7 +122,8 @@ router.post('/register', upload.single('profileImg'), [
         phoneNumber: user.phoneNumber,
         profileImg: user.profileImg,
         isEmailVerified: user.isEmailVerified,
-        isPhoneVerified: user.isPhoneVerified
+        isPhoneVerified: user.isPhoneVerified,
+        crownScore: user.crownScore
       }
     });
 
@@ -298,7 +299,8 @@ router.post('/login', [
         profileImg: user.profileImg,
         isEmailVerified: user.isEmailVerified,
         isPhoneVerified: user.isPhoneVerified,
-        role: user.role
+        role: user.role,
+        crownScore: user.crownScore
       }
     });
 
