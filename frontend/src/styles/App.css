@@ -1517,24 +1517,27 @@
 }
 
 .view-details-btn {
-  display: inline-flex;
+   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;          /* tighter spacing between icon and text */
-  padding: 0.25rem 0.5rem;  /* smaller button */
-  background-color: var(--primary-color);
-  color: white;
-  text-decoration: none;
-  border-radius: 4px;     /* smaller radius */
-  font-size: 0.75rem;     /* smaller font */
+  justify-content: center;
+  padding: 0.65rem 1.4rem;
+  font-size: 1rem;
   font-weight: 500;
-  transition: all 0.2s ease;
+  background: linear-gradient(90deg, #3867d6 0%, #67b26f 100%);
+  color: #fff;
   border: none;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(56, 103, 214, 0.08);
   cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  margin-top: 1rem;
 }
 
 .view-details-btn:hover {
-  background-color: #4338ca;
-  transform: translateY(-1px);
+  background: linear-gradient(90deg, #67b26f 0%, #3867d6 100%);
+  box-shadow: 0 4px 16px rgba(56, 103, 214, 0.15);
+  transform: translateY(-2px) scale(1.03);
+  outline: none;
 }
 
 .btn-icon {
