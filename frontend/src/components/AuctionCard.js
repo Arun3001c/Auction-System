@@ -159,7 +159,7 @@ const getCurrencyInfo = (currency) => currencyLocaleMap[currency] || { locale: '
           </div>
           
           <button
-            className="view-details-btn"
+            className="view-btn"
             onClick={() => {
               if (!user) {
                 toast.info('Please login to view auction details');
@@ -169,7 +169,7 @@ const getCurrencyInfo = (currency) => currencyLocaleMap[currency] || { locale: '
               }
             }}
           >
-            <Eye className="btn-icon" size={16} />
+            {/* <Eye className="btn-icon" size={16} /> */}
             View Details
           </button>
         </div>

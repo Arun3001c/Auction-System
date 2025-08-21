@@ -170,7 +170,7 @@ const Bid = () => {
   if (loading) {
     return (
       <div className="bid-page">
-        <div className="container">
+        <div className="loading-acontainer">
           <div className="loading-spinner">
             <div className="spinner"></div>
             <p>Loading auctions...</p>
@@ -343,7 +343,7 @@ const Bid = () => {
             <h3>Ending Soon</h3>
             <p>Don't miss out on auctions ending in the next 24 hours</p>
             <button
-              onClick={() => handleFilterChange('status', 'ending')}
+              onClick={() => setFilters(prev => ({ ...prev, status: 'ending', sortBy: 'endingSoon' }))}
               className="action-btn"
             >
               <Eye className="btn-icon" />
@@ -356,7 +356,7 @@ const Bid = () => {
             <h3>Most Active</h3>
             <p>See auctions with the most bidding activity</p>
             <button
-              onClick={() => handleFilterChange('sortBy', 'mostBids')}
+              onClick={() => setFilters(prev => ({ ...prev, status: 'live', sortBy: 'mostBids' }))}
               className="action-btn"
             >
               <Eye className="btn-icon" />

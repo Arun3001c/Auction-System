@@ -1515,29 +1515,43 @@
   color: var(--text-secondary);
   font-weight: 400;
 }
+.view-btn{
+background-color: #477fba;   /* Primary blue */
+  color: white;               /* Text color */
+  border: none;               /* Remove default border */
+  padding: 10px 18px;         /* Size */
+  border-radius: 6px;         /* Rounded edges */
+  font-size: 16px;            /* Text size */
+  font-weight: 500;           /* Slightly bold */
+  cursor: pointer;            /* Pointer on hover */
+  transition: all 0.3s ease; 
+
+}
+.view-btn:hover {
+  background-color: #0056b3;  /* Darker blue on hover */
+  transform: translateY(-2px); /* Slight lift effect */
+}
+
 
 .view-details-btn {
-   display: inline-flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 0.65rem 1.4rem;
-  font-size: 1rem;
+  gap: 0.25rem;          /* tighter spacing between icon and text */
+  padding: 0.25rem 0.5rem;  /* smaller button */
+  background-color: var(--primary-color);
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;     /* smaller radius */
+  font-size: 0.75rem;     /* smaller font */
   font-weight: 500;
-  background: linear-gradient(90deg, #3867d6 0%, #67b26f 100%);
-  color: #fff;
+  transition: all 0.2s ease;
   border: none;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(56, 103, 214, 0.08);
   cursor: pointer;
-  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
-  margin-top: 1rem;
 }
 
 .view-details-btn:hover {
-  background: linear-gradient(90deg, #67b26f 0%, #3867d6 100%);
-  box-shadow: 0 4px 16px rgba(56, 103, 214, 0.15);
-  transform: translateY(-2px) scale(1.03);
-  outline: none;
+  background-color: #4338ca;
+  transform: translateY(-1px);
 }
 
 .btn-icon {

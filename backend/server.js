@@ -49,9 +49,11 @@
   app.use('/api/auth', authRoutes);
   app.use('/api/auctions', auctionRoutes);
   app.use('/api/contact', contactRoutes);
-  app.use('/api/admin/auctions', adminAuctionRoutes);
-  app.use('/api/admin/users', adminUserRoutes);
-  app.use('/api/admin/auth', adminAuthRoutes);
+    const adminRoutes = require('./routes/admin');
+    app.use('/api/admin', adminRoutes);
+    app.use('/api/admin/auctions', adminAuctionRoutes);
+  // app.use('/api/admin/users', adminUserRoutes);
+    app.use('/api/admin/auth', adminAuthRoutes);
 
   // Test route
   app.get('/api/test', (req, res) => {
