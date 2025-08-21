@@ -2,6 +2,10 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
+  suspended: {
+    type: Boolean,
+    default: false
+  },
   uid: {
     type: String,
     unique: true,
@@ -86,7 +90,11 @@ const userSchema = new mongoose.Schema({
   crownScore: {
     type: Number,
     default: 100
-  }
+  },
+   suspended: {
+      type: Boolean,
+      default: false
+    }
 }, {
   timestamps: true
 });

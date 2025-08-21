@@ -170,7 +170,7 @@ const Bid = () => {
   if (loading) {
     return (
       <div className="bid-page">
-        <div className="loading-acontainer">
+        <div className="loading-container">
           <div className="loading-spinner">
             <div className="spinner"></div>
             <p>Loading auctions...</p>

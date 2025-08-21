@@ -367,6 +367,9 @@ router.get('/search/:query', async (req, res) => {
 
 // Place bid (requires authentication)
 router.post('/:id/bid', auth, async (req, res) => {
+  if (req.user.suspended) {
+    return res.status(403).json({ message: 'Your account is suspended. You cannot participate in auctions.' });
+  }
   try {
   const { amount } = req.body;
   const auctionId = req.params.id;
@@ -513,6 +516,9 @@ router.post('/', auth, upload.fields([
   { name: 'images', maxCount: 5 },
   { name: 'video', maxCount: 1 }
 ]), async (req, res) => {
+  if (req.user.suspended) {
+    return res.status(403).json({ message: 'Your account is suspended. You cannot create auctions.' });
+  }
   try {
     const {
       auctionId,

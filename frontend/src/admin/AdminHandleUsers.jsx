@@ -82,7 +82,7 @@ const AdminHandleUsers = () => {
               <th>Email</th>
               <th>Phone</th>
               <th>Role</th>
-              <th>Crown Score</th>
+              {/* <th>Crown Score</th> */}
               <th>Actions</th>
             </tr>
           </thead>
@@ -93,7 +93,7 @@ const AdminHandleUsers = () => {
                 <td>{user.email}</td>
                 <td>{user.phoneNumber}</td>
                 <td>{user.role}</td>
-                <td>{user.crownScore}</td>
+                {/* <td>{user.crownScore}</td> */}
                 <td>
                   <button onClick={() => handleEdit(user)}>Edit</button>
                 </td>
@@ -115,11 +115,24 @@ const AdminHandleUsers = () => {
             <input name="email" value={form.email} onChange={handleFormChange} placeholder="Email" />
             <input name="phoneNumber" value={form.phoneNumber} onChange={handleFormChange} placeholder="Phone Number" />
             <input name="role" value={form.role} onChange={handleFormChange} placeholder="Role" />
-            <input name="crownScore" value={form.crownScore} onChange={handleFormChange} placeholder="Crown Score" type="number" />
+            {/* <input name="crownScore" value={form.crownScore} onChange={handleFormChange} placeholder="Crown Score" type="number" /> */}
             <input name="password" value={form.password} onChange={handleFormChange} placeholder="New Password (optional)" type="password" />
             {/* Add more fields as needed from your user schema */}
             <button type="submit">Update</button>
             <button type="button" onClick={() => setEditUser(null)}>Cancel</button>
+            <button
+              type="button"
+              style={{background: editUser.suspended ? '#67b26f' : '#d63031', color: '#fff', marginLeft: 8}}
+              onClick={async () => {
+                setLoading(true);
+                await axios.put(`/api/admin/users/${editUser._id}/${editUser.suspended ? 'unsuspend' : 'suspend'}`);
+                setEditUser(null);
+                fetchUsers();
+                setLoading(false);
+              }}
+            >
+              {editUser.suspended ? 'Unsuspend User' : 'Suspend User'}
+            </button>
           </form>
         </div>
       )}
