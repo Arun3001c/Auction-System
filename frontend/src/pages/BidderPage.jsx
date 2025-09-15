@@ -156,6 +156,22 @@ const BidderPage = () => {
 
   if (loading) return <div>Loading...</div>;
   if (!auction) return <div>Auction not found</div>;
+  // If auction is stopped, show message and disable bid UI
+  if (auction.status === 'stopped') {
+    return (
+      <div className="auction-details-page">
+        <div className="container">
+          <button onClick={() => navigate(-1)} className="back-btn">
+            <ArrowLeft className="btn-icon" />
+            Back to Auctions
+          </button>
+          <div style={{marginTop: '2rem', color: '#ef4444', fontWeight: 600, fontSize: '1.2rem', textAlign: 'center'}}>
+            This auction has been stopped by the admin. Bidding is currently disabled.
+          </div>
+        </div>
+      </div>
+    );
+  }
   // Prevent access if user is not verified
   if (user && (!user.isEmailVerified || !user.isPhoneVerified)) {
     return (

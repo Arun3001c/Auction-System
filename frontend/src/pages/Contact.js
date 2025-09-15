@@ -55,7 +55,7 @@ const Contact = () => {
                   </div>
                   <div className="method-content">
                     <h3>Email</h3>
-                    <p>support@auctionhub.com</p>
+                    <p>arunk330840@gmail.com</p>
                     <span className="method-note">Response within 24 hours</span>
                   </div>
                 </div>
@@ -66,8 +66,8 @@ const Contact = () => {
                   </div>
                   <div className="method-content">
                     <h3>Phone</h3>
-                    <p>+1 (555) 123-4567</p>
-                    <span className="method-note">Mon-Fri 9 AM - 6 PM EST</span>
+                    <p>+91 9346311161</p>
+                    {/* <span className="method-note">Mon-Fri 9 AM - 6 PM IST</span> */}
                   </div>
                 </div>
 
@@ -77,8 +77,8 @@ const Contact = () => {
                   </div>
                   <div className="method-content">
                     <h3>Address</h3>
-                    <p>123 Auction Street<br />New York, NY 10001</p>
-                    <span className="method-note">Visit us during business hours</span>
+                    <p>1-32 vvit college road, <br />Namburu 522508</p>
+                    {/* <span className="method-note">Visit us during business hours</span> */}
                   </div>
                 </div>
               </div>

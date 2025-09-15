@@ -19,7 +19,7 @@ const auctionSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['Electronics', 'Fashion', 'Home & Garden', 'Collectibles', 'Art', 'Books','Music','Jewelry', 'Vehicles', 'Automotive', 'Sports', 'Other']
+  enum: ['Electronics', 'Fashion', 'Home & Garden', 'Collectibles', 'Art', 'Books', 'Music', 'Jewelry', 'Vehicles', 'Automotive', 'Sports', 'Other']
   },
   auctionType: {
     type: String,
@@ -100,7 +100,7 @@ const auctionSchema = new mongoose.Schema({
   }],
   status: {
     type: String,
-    enum: ['upcoming', 'active', 'ended', 'cancelled', 'deleted'],
+    enum: ['upcoming', 'active', 'ended', 'cancelled', 'deleted', 'stopped'],
     default: 'upcoming'
   },
   featured: {

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import './MyBids.css';
 import { Search, Trophy } from 'lucide-react';
+import WinnerNotifications from '../components/WinnerNotifications';
 
 const MyBids = () => {
   const [bids, setBids] = useState([]);
@@ -12,6 +13,7 @@ const MyBids = () => {
   const [expandedBids, setExpandedBids] = useState({});
   const [notifications, setNotifications] = useState(null);
   const [showWonClicked, setShowWonClicked] = useState(false);
+  const [showWinnerModal, setShowWinnerModal] = useState(false);
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
@@ -146,21 +148,8 @@ const MyBids = () => {
       <h3 style={{ marginBottom: '1rem' }}>Auctions Won</h3>
       <button
         style={{ background: '#6366f1', color: 'white', padding: '0.5rem 1rem', borderRadius: '6px', fontWeight: 500, marginBottom: '1rem' }}
-        onClick={async () => {
-          setShowWonClicked(true);
-          const token = localStorage.getItem('token');
-          try {
-            const res = await axios.get('/api/auctions/user/winner-notifications', {
-              headers: { Authorization: `Bearer ${token}` }
-            });
-            if (!res.data || res.data.length === 0) {
-              setNotifications([]);
-            } else {
-              setNotifications(res.data);
-            }
-          } catch (err) {
-            setNotifications([]);
-          }
+        onClick={() => {
+          setShowWinnerModal(true);
         }}
       >Show Auctions Won</button>
       {/* Only show results after button is clicked */}
@@ -181,6 +170,13 @@ const MyBids = () => {
         )
       ) : null}
     </div>
+    
+    {/* Winner Notifications Modal */}
+    <WinnerNotifications 
+      show={showWinnerModal} 
+      onClose={() => setShowWinnerModal(false)}
+      forceRefresh={showWinnerModal}
+    />
     </>
   );
 };

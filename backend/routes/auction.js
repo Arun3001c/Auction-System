@@ -15,14 +15,34 @@ async function saveWinnerIfEnded(auction) {
     if (!existing) {
       // Get user details
       const user = await require('../models/User').findById(auction.currentHighestBidder);
-      await Winner.create({
+      const winner = await Winner.create({
         auction: auction._id,
         user: user._id,
         fullName: user.fullName,
         email: user.email,
         phone: user.phoneNumber,
-        amount: auction.currentBid
+        amount: auction.currentBid,
+        notified: false
       });
+
+      // Send winner notification email
+      try {
+        const winnerController = require('../controllers/winnerController');
+        await winnerController.sendWinnerNotification({
+          winnerId: winner._id,
+          fullName: user.fullName,
+          email: user.email,
+          phone: user.phoneNumber,
+          amount: auction.currentBid,
+          currency: auction.currency,
+          auctionTitle: auction.title,
+          auctionId: auction.auctionId
+        });
+        console.log(`Winner notification email sent for auction: ${auction.title}`);
+      } catch (emailError) {
+        console.error('Failed to send winner notification email:', emailError);
+        // Don't throw error - auction processing should continue even if email fails
+      }
     }
   }
 }
@@ -127,6 +147,76 @@ router.put('/:id/endtime', auth, async (req, res) => {
 
 // Get winner notifications (auctions won by user)
 router.get('/user/winner-notifications', auth, winnerController.getWinnerNotifications);
+
+// Manual trigger to process ended auctions (admin only or for testing)
+router.post('/process-ended-auctions', auth, async (req, res) => {
+  try {
+    const { processEndedAuctions } = require('../utils/auctionScheduler');
+    await processEndedAuctions();
+    res.json({ message: 'Ended auctions processed successfully' });
+  } catch (error) {
+    console.error('Error processing ended auctions:', error);
+    res.status(500).json({ message: 'Error processing ended auctions' });
+  }
+});
+
+// Test winner notification email (for testing purposes)
+router.post('/test-winner-notification', auth, async (req, res) => {
+  try {
+    const { sendWinnerNotification } = require('../controllers/winnerController');
+    
+    // Use current user's data for testing
+    const testWinnerData = {
+      winnerId: 'test-id',
+      fullName: req.user.fullName,
+      email: req.user.email,
+      phone: req.user.phoneNumber || '123-456-7890',
+      amount: 100.00,
+      currency: 'USD',
+      auctionTitle: 'Test Auction Item',
+      auctionId: 'TEST-AUCTION-001'
+    };
+    
+    const result = await sendWinnerNotification(testWinnerData);
+    
+    if (result.success) {
+      res.json({ message: 'Test winner notification sent successfully', email: req.user.email });
+    } else {
+      res.status(500).json({ message: 'Failed to send test notification', error: result.error });
+    }
+  } catch (error) {
+    console.error('Error sending test winner notification:', error);
+    res.status(500).json({ message: 'Error sending test notification' });
+  }
+});
+
+// Force end auction for testing (admin or auction owner only)
+router.post('/:id/force-end', auth, async (req, res) => {
+  try {
+    const auction = await Auction.findById(req.params.id);
+    if (!auction) {
+      return res.status(404).json({ message: 'Auction not found' });
+    }
+
+    // Only seller can force end their auction
+    if (auction.seller.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to end this auction' });
+    }
+
+    // Set end date to now to force it to end
+    auction.endDate = new Date();
+    auction.status = 'ended';
+    await auction.save();
+
+    // Process winner if there's a highest bidder
+    await saveWinnerIfEnded(auction);
+
+    res.json({ message: 'Auction force-ended successfully', auction });
+  } catch (error) {
+    console.error('Error force-ending auction:', error);
+    res.status(500).json({ message: 'Error force-ending auction' });
+  }
+});
 
 // Get user's participated bid history
 router.get('/user/participated-bids', auth, bidHistoryController.getParticipatedBidHistory);
@@ -633,6 +723,56 @@ router.post('/', auth, upload.fields([
   } catch (error) {
     console.error('Create auction error:', error);
     res.status(500).json({ message: 'Server error creating auction' });
+  }
+});
+
+// Test endpoint to manually trigger auction processing
+router.post('/test-auction-processing', async (req, res) => {
+  try {
+    console.log('Manual auction processing triggered...');
+    const { processEndedAuctions } = require('../utils/auctionScheduler');
+    await processEndedAuctions();
+    res.json({ message: 'Auction processing completed. Check server logs for details.' });
+  } catch (error) {
+    console.error('Test auction processing error:', error);
+    res.status(500).json({ message: 'Error processing auctions', error: error.message });
+  }
+});
+
+// Test endpoint to send winner notification email
+router.post('/test-winner-email', async (req, res) => {
+  try {
+    const { email, fullName, auctionTitle, amount } = req.body;
+    
+    if (!email || !fullName || !auctionTitle || !amount) {
+      return res.status(400).json({ 
+        message: 'Missing required fields: email, fullName, auctionTitle, amount' 
+      });
+    }
+
+    console.log('Testing winner notification email...');
+    
+    const testWinnerData = {
+      winnerId: 'test-id',
+      fullName,
+      email,
+      phone: '1234567890',
+      amount,
+      currency: 'USD',
+      auctionTitle,
+      auctionId: 'TEST-AUCTION-001'
+    };
+
+    const result = await winnerController.sendWinnerNotification(testWinnerData);
+    
+    res.json({ 
+      message: 'Test email sent', 
+      result,
+      testData: testWinnerData
+    });
+  } catch (error) {
+    console.error('Test winner email error:', error);
+    res.status(500).json({ message: 'Error sending test email', error: error.message });
   }
 });
 

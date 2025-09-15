@@ -16,6 +16,11 @@
   const adminUserRoutes = require('./routes/adminUser');
   const adminAuthRoutes = require('./routes/adminAuth');
 
+  const adminHandleAuctionsRoutes = require('./routes/adminHandleAuctions');
+  
+  // Import auction scheduler
+  const { startAuctionScheduler, stopAuctionScheduler } = require('./utils/auctionScheduler');
+  
   // Diagnostic logging for route types
   function logRouteType(name, route) {
     console.log(`${name} type:`, typeof route, Array.isArray(route) ? 'Array' : (route && route.stack ? 'Router' : 'Object'));
@@ -49,11 +54,10 @@
   app.use('/api/auth', authRoutes);
   app.use('/api/auctions', auctionRoutes);
   app.use('/api/contact', contactRoutes);
-    const adminRoutes = require('./routes/admin');
-    app.use('/api/admin', adminRoutes);
-    app.use('/api/admin/auctions', adminAuctionRoutes);
-  // app.use('/api/admin/users', adminUserRoutes);
-    app.use('/api/admin/auth', adminAuthRoutes);
+  const adminRoutes = require('./routes/admin');
+  app.use('/api/admin', adminRoutes);
+  app.use('/api/admin/handle-auctions', adminHandleAuctionsRoutes);
+  app.use('/api/admin/auth', adminAuthRoutes);
 
   // Test route
   app.get('/api/test', (req, res) => {
@@ -86,7 +90,31 @@
 
   const PORT = process.env.PORT || 5001;
 
+  let auctionSchedulerInterval;
+
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     console.log('Connected to MongoDB Atlas');
+    
+    // Start the auction scheduler
+    auctionSchedulerInterval = startAuctionScheduler();
+  });
+
+  // Graceful shutdown
+  process.on('SIGINT', () => {
+    console.log('\nReceived SIGINT. Graceful shutdown...');
+    stopAuctionScheduler(auctionSchedulerInterval);
+    mongoose.connection.close(() => {
+      console.log('MongoDB connection closed.');
+      process.exit(0);
+    });
+  });
+
+  process.on('SIGTERM', () => {
+    console.log('\nReceived SIGTERM. Graceful shutdown...');
+    stopAuctionScheduler(auctionSchedulerInterval);
+    mongoose.connection.close(() => {
+      console.log('MongoDB connection closed.');
+      process.exit(0);
+    });
   });

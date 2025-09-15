@@ -42,7 +42,7 @@ const CreateAuction = () => {
 
   const categories = [
     'Electronics', 'Fashion', 'Home & Garden', 'Sports', 'Collectibles',
-    'Art', 'Books', 'Music', 'Jewelry', 'Vehicles','Automotive', 'Other'
+    'Art', 'Books', 'Music', 'Jewelry', 'Vehicles', 'Automotive', 'Other'
   ];
 
   const handleImageUpload = (e) => {
