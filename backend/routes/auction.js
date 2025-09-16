@@ -1,5 +1,7 @@
 const express = require('express');
 const Auction = require('../models/Auction');
+const AuctionRequest = require('../models/AuctionRequest');
+const PaymentRequest = require('../models/PaymentRequest');
 const { auth } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const bidHistoryController = require('../controllers/bidHistoryController');
@@ -221,6 +223,50 @@ router.post('/:id/force-end', auth, async (req, res) => {
 // Get user's participated bid history
 router.get('/user/participated-bids', auth, bidHistoryController.getParticipatedBidHistory);
 
+// Get bids for auctions created by the user
+router.get('/user/created-bids/:auctionId', auth, async (req, res) => {
+  try {
+    const { auctionId } = req.params;
+    const userId = req.user._id;
+    
+    // Verify the user owns this auction
+    const auction = await Auction.findById(auctionId);
+    if (!auction) {
+      return res.status(404).json({ message: 'Auction not found' });
+    }
+    
+    if (auction.seller.toString() !== userId.toString()) {
+      return res.status(403).json({ message: 'Access denied: You are not the owner of this auction' });
+    }
+    
+    // Get all bids for this auction from CreatedBidHistory
+    const CreatedBidHistory = require('../models/CreatedBidHistory');
+    const history = await CreatedBidHistory.findOne({ auction: auctionId, seller: userId })
+      .populate('bids.bidder', 'fullName email');
+    
+    const bids = history ? history.bids : [];
+    
+    // Sort bids by amount (highest first) and then by time (latest first)
+    const sortedBids = bids.sort((a, b) => {
+      if (b.amount !== a.amount) {
+        return b.amount - a.amount; // Higher amount first
+      }
+      return new Date(b.createdAt) - new Date(a.createdAt); // Latest first if same amount
+    });
+    
+    res.json({
+      success: true,
+      bids: sortedBids,
+      totalBids: sortedBids.length,
+      highestBid: sortedBids.length > 0 ? sortedBids[0] : null
+    });
+    
+  } catch (error) {
+    console.error('Error fetching created bid history:', error);
+    res.status(500).json({ message: 'Server error fetching bid history' });
+  }
+});
+
 // Soft delete auction (set status to deleted)
 router.delete('/:id', auth, async (req, res) => {
   try {
@@ -252,6 +298,21 @@ router.get('/my', auth, async (req, res) => {
   } catch (error) {
     console.error('Get my auctions error:', error);
     res.status(500).json({ message: 'Server error fetching your auctions' });
+  }
+});
+
+// Get auction requests by the logged-in user
+router.get('/my-requests', auth, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const requests = await AuctionRequest.find({ seller: userId })
+      .populate('seller', 'fullName')
+      .populate('reviewedBy', 'fullName')
+      .sort('-submittedAt');
+    res.json(requests);
+  } catch (error) {
+    console.error('Get my auction requests error:', error);
+    res.status(500).json({ message: 'Server error fetching your auction requests' });
   }
 });
 
@@ -377,8 +438,8 @@ router.get('/:id', async (req, res) => {
   try {
     const auction = await Auction.findById(req.params.id)
       .populate('seller', 'fullName email profileImg')
-      .populate('currentHighestBidder', 'fullName')
-      .populate('bids.bidder', 'fullName');
+      .populate('currentHighestBidder', 'fullName email phoneNumber username')
+      .populate('bids.bidder', 'fullName email phoneNumber username');
 
     if (!auction) {
       return res.status(404).json({ message: 'Auction not found' });
@@ -481,6 +542,45 @@ router.post('/:id/bid', auth, async (req, res) => {
 
     if (auction.status !== 'active') {
       return res.status(400).json({ message: 'Auction is not active' });
+    }
+
+    // Check payment verification for reserve auctions
+    if (auction.auctionType === 'reserve') {
+      const paymentRequest = await PaymentRequest.findOne({
+        auction: auctionId,
+        user: userId
+      });
+
+      if (!paymentRequest) {
+        return res.status(403).json({ 
+          message: 'Payment required to participate in reserve auction',
+          requiresPayment: true,
+          auctionType: 'reserve'
+        });
+      }
+
+      if (paymentRequest.verificationStatus !== 'approved') {
+        const statusMessages = {
+          pending: 'Your payment is being verified by admin. Please wait for approval.',
+          rejected: `Your payment was rejected. Reason: ${paymentRequest.adminNotes || 'Contact admin for details'}`
+        };
+
+        return res.status(403).json({ 
+          message: statusMessages[paymentRequest.verificationStatus] || 'Payment verification required',
+          paymentStatus: paymentRequest.verificationStatus,
+          adminNotes: paymentRequest.adminNotes,
+          requiresPayment: paymentRequest.verificationStatus === 'rejected'
+        });
+      }
+
+      // Check if user is eligible to bid (approved payment)
+      if (!paymentRequest.biddingEligibleFrom || paymentRequest.biddingEligibleFrom > new Date()) {
+        return res.status(403).json({ 
+          message: 'Payment approved but bidding not yet enabled. Contact admin.',
+          paymentStatus: 'approved',
+          biddingEligibleFrom: paymentRequest.biddingEligibleFrom
+        });
+      }
     }
 
     if (auction.seller.toString() === userId.toString()) {
@@ -604,7 +704,8 @@ router.get('/user/bids', auth, async (req, res) => {
 // Create new auction
 router.post('/', auth, upload.fields([
   { name: 'images', maxCount: 5 },
-  { name: 'video', maxCount: 1 }
+  { name: 'video', maxCount: 1 },
+  { name: 'certificates', maxCount: 5 }
 ]), async (req, res) => {
   if (req.user.suspended) {
     return res.status(403).json({ message: 'Your account is suspended. You cannot create auctions.' });
@@ -622,7 +723,8 @@ router.post('/', auth, upload.fields([
       startDate,
       endDate,
       currency,
-      participationCode
+      participationCode,
+      needsApproval
     } = req.body;
 
     // Validate required fields
@@ -630,15 +732,17 @@ router.post('/', auth, upload.fields([
       return res.status(400).json({ message: 'All required fields must be provided' });
     }
 
-    // Check if auction ID already exists
+    // Check if auction ID already exists (both in auctions and auction requests)
     const existingAuction = await Auction.findOne({ auctionId });
-    if (existingAuction) {
+    const existingRequest = await AuctionRequest.findOne({ auctionId });
+    if (existingAuction || existingRequest) {
       return res.status(400).json({ message: 'Auction ID already exists' });
     }
 
-    // Check if participation code already exists
+    // Check if participation code already exists (both in auctions and auction requests)
     const existingCode = await Auction.findOne({ participationCode });
-    if (existingCode) {
+    const existingCodeRequest = await AuctionRequest.findOne({ participationCode });
+    if (existingCode || existingCodeRequest) {
       return res.status(400).json({ message: 'Participation code already exists' });
     }
 
@@ -664,6 +768,12 @@ router.post('/', auth, upload.fields([
     const { uploadToCloudinary } = require('../utils/cloudinary');
     let images = [];
     let video = null;
+    let certificates = [];
+
+    console.log('Files received:', Object.keys(req.files || {}));
+    console.log('Images files:', req.files?.images?.length || 0);
+    console.log('Certificate files:', req.files?.certificates?.length || 0);
+
     if (req.files && req.files.images) {
       for (const file of req.files.images) {
         try {
@@ -674,6 +784,7 @@ router.post('/', auth, upload.fields([
         }
       }
     }
+
     if (req.files && req.files.video && req.files.video[0]) {
       try {
         video = await uploadToCloudinary(req.files.video[0].path, 'auctions/videos', 'video');
@@ -682,7 +793,27 @@ router.post('/', auth, upload.fields([
       }
     }
 
-    // Create auction object
+    // Handle certificate uploads for reserve auctions
+    if (auctionType === 'reserve') {
+      if (!req.files || !req.files.certificates || req.files.certificates.length === 0) {
+        return res.status(400).json({ message: 'At least one ownership certificate is required for reserve auctions' });
+      }
+
+      if (req.files.certificates.length > 5) {
+        return res.status(400).json({ message: 'Maximum 5 ownership certificates allowed' });
+      }
+
+      for (const file of req.files.certificates) {
+        try {
+          const url = await uploadToCloudinary(file.path, 'auctions/certificates');
+          certificates.push(url);
+        } catch (err) {
+          console.error('Cloudinary certificate upload error:', err);
+        }
+      }
+    }
+
+    // Create auction data object
     const auctionData = {
       auctionId,
       title,
@@ -704,20 +835,44 @@ router.post('/', auth, upload.fields([
       auctionData.reservePrice = parseFloat(reservePrice);
     }
 
-    if (auctionType === 'reserve' && minimumPrice) {
-      auctionData.minimumPrice = parseFloat(minimumPrice);
+    if (auctionType === 'reserve') {
+      if (minimumPrice) {
+        auctionData.minimumPrice = parseFloat(minimumPrice);
+      }
+      auctionData.certificates = certificates;
     }
 
-    // Create the auction
+    // Handle reserve auctions - create auction request instead of auction
+    if (auctionType === 'reserve') {
+      console.log('Creating reserve auction request with:');
+      console.log('Images:', images.length, images);
+      console.log('Certificates:', certificates.length, certificates);
+      
+      const auctionRequest = new AuctionRequest({
+        ...auctionData,
+        approvalStatus: 'pending',
+        submittedAt: new Date()
+      });
+      
+      await auctionRequest.save();
+      await auctionRequest.populate('seller', 'fullName email');
+
+      return res.status(201).json({
+        message: 'Reserve auction request submitted successfully. It will be reviewed by admin before going live.',
+        auctionRequest,
+        requiresApproval: true
+      });
+    }
+
+    // For non-reserve auctions, create auction directly
     const auction = new Auction(auctionData);
     await auction.save();
-
-    // Populate seller information
     await auction.populate('seller', 'fullName email');
 
     res.status(201).json({
       message: 'Auction created successfully',
-      auction
+      auction,
+      requiresApproval: false
     });
 
   } catch (error) {

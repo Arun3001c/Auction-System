@@ -14,6 +14,8 @@ const CreateAuction = () => {
   const [video, setVideo] = useState(null);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [videoPreview, setVideoPreview] = useState(null);
+  const [certificates, setCertificates] = useState([]);
+  const [certificatePreviews, setCertificatePreviews] = useState([]);
 
   const watchAuctionType = watch('auctionType');
 
@@ -85,6 +87,50 @@ const CreateAuction = () => {
     setVideoPreview(null);
   };
 
+  const handleCertificateUpload = (e) => {
+    const files = Array.from(e.target.files);
+    
+    if (certificates.length + files.length > 5) {
+      toast.error('Maximum 5 certificate images allowed');
+      return;
+    }
+
+    if (certificates.length + files.length < 1) {
+      toast.error('At least 1 certificate image is required for reserve auctions');
+      return;
+    }
+
+    // Validate file types (only images)
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const invalidFiles = files.filter(file => !validTypes.includes(file.type));
+    
+    if (invalidFiles.length > 0) {
+      toast.error('Only image files (JPEG, PNG, WebP) are allowed for certificates');
+      return;
+    }
+
+    // Validate file size (5MB per file)
+    const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024);
+    if (oversizedFiles.length > 0) {
+      toast.error('Certificate images must be less than 5MB each');
+      return;
+    }
+
+    const newCertificates = [...certificates, ...files];
+    setCertificates(newCertificates);
+
+    // Create previews
+    const newPreviews = files.map(file => URL.createObjectURL(file));
+    setCertificatePreviews(prev => [...prev, ...newPreviews]);
+  };
+
+  const removeCertificate = (index) => {
+    const newCertificates = certificates.filter((_, i) => i !== index);
+    const newPreviews = certificatePreviews.filter((_, i) => i !== index);
+    setCertificates(newCertificates);
+    setCertificatePreviews(newPreviews);
+  };
+
   const generateAuctionId = () => {
     const timestamp = Date.now().toString(36);
     const randomStr = Math.random().toString(36).substring(2, 8);
@@ -105,6 +151,19 @@ const CreateAuction = () => {
       navigate('/profile');
       return;
     }
+
+    // Validate certificates for reserve auctions
+    if (data.auctionType === 'reserve') {
+      if (certificates.length === 0) {
+        toast.error('At least 1 ownership certificate is required for reserve auctions');
+        return;
+      }
+      if (certificates.length > 5) {
+        toast.error('Maximum 5 ownership certificates allowed');
+        return;
+      }
+    }
+
     try {
       if (images.length === 0) {
         toast.error('At least one image is required');
@@ -139,14 +198,33 @@ const CreateAuction = () => {
         formData.append('video', video);
       }
 
+      // Add certificates for reserve auctions
+      if (data.auctionType === 'reserve' && certificates.length > 0) {
+        certificates.forEach((certificate, index) => {
+          formData.append(`certificates`, certificate);
+        });
+        // Mark as pending approval for reserve auctions
+        formData.append('needsApproval', 'true');
+      }
+
       const response = await api.post('/auctions', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
-      toast.success(`Auction created! Participation Code: ${participationCode}`);
-      navigate(`/auction/${response.data.auction._id}`);
+      // Handle different responses based on auction type
+      if (response.data.requiresApproval) {
+        // Reserve auction - submitted for approval
+        toast.success(`Reserve auction submitted for approval! Your auction will be reviewed by admin and automatically created once your ownership certificates are verified. Participation Code: ${participationCode}`, {
+          autoClose: 10000
+        });
+        navigate('/profile'); // Redirect to profile to see pending requests
+      } else {
+        // Regular auction - created immediately
+        toast.success(`Auction created successfully! Participation Code: ${participationCode}`);
+        navigate(`/auction/${response.data.auction._id}`);
+      }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create auction');
     }
@@ -403,6 +481,147 @@ const CreateAuction = () => {
                     {errors.minimumPrice && <span className="error-message">{errors.minimumPrice.message}</span>}
                   </div>
                 )}
+
+                {/* Reserve Auction Requirements Warning */}
+                {watchAuctionType === 'reserve' && (
+                  <div style={{
+                    background: '#fef3c7',
+                    border: '1px solid #f59e0b',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    marginBottom: '1.5rem'
+                  }}>
+                    <h4 style={{ margin: '0 0 0.5rem 0', color: '#92400e', fontSize: '16px' }}>
+                      ⚠️ Reserve Auction Requirements
+                    </h4>
+                    <div style={{ color: '#92400e', fontSize: '14px', lineHeight: '1.5' }}>
+                      <p style={{ margin: '0 0 0.5rem 0' }}>
+                        <strong>You need to upload TWO types of files:</strong>
+                      </p>
+                      <ol style={{ margin: '0', paddingLeft: '1.5rem' }}>
+                        <li><strong>Auction Item Images:</strong> Photos of the item you're selling (uploaded above)</li>
+                        <li><strong>Ownership Documents:</strong> Certificates/receipts proving you own the item (uploaded below)</li>
+                      </ol>
+                      <p style={{ margin: '0.5rem 0 0 0', fontSize: '13px' }}>
+                        Admin will review both before approving your auction.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Ownership Certificate Upload for Reserve Auctions */}
+                {watchAuctionType === 'reserve' && (
+                  <div className="form-group">
+                    <label className="form-label">
+                      <FileText className="label-icon" />
+                      Ownership Certificates * (1-5 documents required)
+                    </label>
+                    <p className="form-description">
+                      Upload ownership documents/certificates to verify you own the item. These are SEPARATE from auction item images above. 
+                      Examples: purchase receipts, certificates of authenticity, ownership papers, etc.
+                    </p>
+                    
+                    <div className="certificate-upload-section">
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleCertificateUpload}
+                        style={{ display: 'none' }}
+                        id="certificate-upload"
+                      />
+                      
+                      <label 
+                        htmlFor="certificate-upload" 
+                        className="upload-button certificate-upload-button"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.75rem 1rem',
+                          border: '2px dashed #f59e0b',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          backgroundColor: '#fffbeb',
+                          transition: 'all 0.2s ease',
+                          marginBottom: '1rem'
+                        }}
+                      >
+                        <Upload size={20} />
+                        Add Ownership Documents ({certificates.length}/5)
+                      </label>
+
+                      {/* Certificate Previews */}
+                      {certificatePreviews.length > 0 && (
+                        <div className="certificate-previews" style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                          gap: '1rem',
+                          marginTop: '1rem'
+                        }}>
+                          {certificatePreviews.map((preview, index) => (
+                            <div key={index} className="certificate-preview-item" style={{
+                              position: 'relative',
+                              borderRadius: '8px',
+                              overflow: 'hidden',
+                              border: '2px solid #e2e8f0'
+                            }}>
+                              <img
+                                src={preview}
+                                alt={`Certificate ${index + 1}`}
+                                style={{
+                                  width: '100%',
+                                  height: '120px',
+                                  objectFit: 'cover'
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeCertificate(index)}
+                                className="remove-certificate-btn"
+                                style={{
+                                  position: 'absolute',
+                                  top: '4px',
+                                  right: '4px',
+                                  background: '#ef4444',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '50%',
+                                  width: '24px',
+                                  height: '24px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  fontSize: '14px'
+                                }}
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Certificate requirement message */}
+                      <div style={{
+                        padding: '0.75rem',
+                        backgroundColor: '#fef3c7',
+                        border: '1px solid #f59e0b',
+                        borderRadius: '6px',
+                        marginTop: '1rem'
+                      }}>
+                        <p style={{ 
+                          margin: 0, 
+                          fontSize: '0.875rem',
+                          color: '#92400e'
+                        }}>
+                          ⚠️ Reserve auctions require admin approval. Your auction will be in "Pending" status until certificates are verified.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               {/* Participation Code Display with Generate Button */}
               <div className="form-group">
@@ -435,8 +654,11 @@ const CreateAuction = () => {
               <div className="form-group">
                 <label className="form-label">
                   <ImageIcon className="label-icon" />
-                  Images * (1-5 images required)
+                  Auction Item Images * (1-5 images required)
                 </label>
+                <p className="form-description">
+                  Upload clear photos of the item you're auctioning. These images will be shown to bidders.
+                </p>
                 
                 <div className="image-upload-area">
                   <input
@@ -449,7 +671,7 @@ const CreateAuction = () => {
                   />
                   <label htmlFor="images" className="upload-button">
                     <Upload className="upload-icon" />
-                    Choose Images
+                    Choose Auction Item Images
                   </label>
                   <p className="upload-hint">PNG, JPG, JPEG up to 5MB each. Maximum 5 images.</p>
                 </div>

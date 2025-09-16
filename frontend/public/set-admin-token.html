@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Set Admin Token</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; }
+        .token-box { background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 10px 0; word-break: break-all; font-family: monospace; font-size: 12px; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .success { color: green; font-weight: bold; }
+        .info { background: #e7f3ff; padding: 15px; border-radius: 6px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔑 Admin Token Setup</h1>
+        
+        <div class="info">
+            <strong>Instructions:</strong> Click the button below to set the admin token in localStorage so the admin panel can authenticate properly.
+        </div>
+        
+        <div class="token-box">
+            <strong>Admin Token:</strong><br>
+            eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4Yzk2MDNiMzNiMjkwNGJkYmU3MzAyZiIsImVtYWlsIjoiYWRtaW5AdGVzdC5jb20iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTgwMjc5MTQsImV4cCI6MTc1ODExNDMxNH0.lnZIhgFT-4oPRZt7cY3yCh8Pj0J-g3XKf9HqZ8NfwDI
+        </div>
+        
+        <button onclick="setAdminToken()">🔓 Set Admin Token</button>
+        <button onclick="checkToken()">✅ Check Current Token</button>
+        <button onclick="clearToken()">🗑️ Clear Token</button>
+        
+        <div id="status"></div>
+        
+        <div class="info">
+            <strong>Next Steps:</strong>
+            <ol>
+                <li>Click "Set Admin Token" above</li>
+                <li>Go to the admin panel: <a href="http://localhost:3001" target="_blank">http://localhost:3001</a></li>
+                <li>Navigate to the payment requests section</li>
+                <li>You should now see the payment data with enhanced screenshot viewer!</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        const adminToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4Yzk2MDNiMzNiMjkwNGJkYmU3MzAyZiIsImVtYWlsIjoiYWRtaW5AdGVzdC5jb20iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTgwMjc5MTQsImV4cCI6MTc1ODExNDMxNH0.lnZIhgFT-4oPRZt7cY3yCh8Pj0J-g3XKf9HqZ8NfwDI';
+        
+        function setAdminToken() {
+            try {
+                localStorage.setItem('adminToken', adminToken);
+                document.getElementById('status').innerHTML = '<div class="success">✅ Admin token set successfully!</div>';
+            } catch (error) {
+                document.getElementById('status').innerHTML = '<div style="color: red;">❌ Error setting token: ' + error.message + '</div>';
+            }
+        }
+        
+        function checkToken() {
+            const currentToken = localStorage.getItem('adminToken');
+            if (currentToken) {
+                document.getElementById('status').innerHTML = '<div class="success">✅ Admin token is set</div><div class="token-box">Current Token: ' + currentToken + '</div>';
+            } else {
+                document.getElementById('status').innerHTML = '<div style="color: orange;">⚠️ No admin token found</div>';
+            }
+        }
+        
+        function clearToken() {
+            localStorage.removeItem('adminToken');
+            document.getElementById('status').innerHTML = '<div style="color: orange;">🗑️ Admin token cleared</div>';
+        }
+        
+        // Check token on page load
+        checkToken();
+    </script>
+</body>
+</html>

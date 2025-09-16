@@ -1998,6 +1998,273 @@ background-color: #477fba;   /* Primary blue */
 
 .submit-btn {
   display: flex;
+
+/* Winner Card Styles */
+.auction-winner-iframe {
+  margin-top: 2rem;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(2,6,23,0.06);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.auction-winner-iframe img {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-block;
+  box-shadow: 0 6px 18px rgba(15,23,42,0.08);
+}
+
+.auction-winner-iframe h2 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0.5rem 0 0.25rem 0;
+}
+
+.auction-winner-iframe .winner-name {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.auction-winner-iframe .winner-contact {
+  color: #475569;
+  margin-top: 0.25rem;
+}
+
+.auction-winner-iframe .winner-amount {
+  margin-top: 0.75rem;
+  background: #eef2ff;
+  color: #4f46e5;
+  display: inline-block;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .auction-winner-iframe img {
+    width: 72px;
+    height: 72px;
+  }
+  .auction-winner-iframe h2 {
+    font-size: 1.05rem;
+  }
+}
+
+/* Trophy animation */
+.trophy-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center bottom;
+  margin-bottom: -12px; /* tuck trophy slightly over avatar */
+}
+.trophy-svg {
+  animation: trophy-bounce 1.2s ease-in-out infinite, trophy-shine 2.5s linear 0.3s infinite;
+  filter: drop-shadow(0 6px 10px rgba(15,23,42,0.08));
+}
+
+@keyframes trophy-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-8px) scale(1.06); }
+}
+
+@keyframes trophy-shine {
+  0% { transform: translateX(-6px) skewX(-8deg); opacity: 0.85; }
+  50% { transform: translateX(6px) skewX(8deg); opacity: 1; }
+  100% { transform: translateX(-6px) skewX(-8deg); opacity: 0.85; }
+}
+
+/* Winner card styles removed - now using .winner-card-centered */
+
+/* NEW AUCTION WINNER DISPLAY STYLES */
+.auction-winner-display {
+  margin: 2rem auto;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  padding: 3rem 2rem;
+  max-width: 420px;
+  text-align: center;
+  border: 2px solid #f8fafc;
+  position: relative;
+  overflow: hidden;
+}
+
+.auction-winner-display::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed, #ec4899);
+}
+
+.winner-profile-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.winner-avatar-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.winner-circular-avatar {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 6px solid #ffffff;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+  background: #f1f5f9;
+  transition: transform 0.3s ease;
+}
+
+.winner-circular-avatar:hover {
+  transform: scale(1.05);
+}
+
+.winner-info-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+.winner-display-name {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #1e293b;
+  margin: 0;
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+
+.winner-bid-amount {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #ec4899 100%);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 20px;
+  font-weight: 800;
+  font-size: 1.4rem;
+  box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+  border: none;
+  display: inline-block;
+  letter-spacing: 0.02em;
+  min-width: 200px;
+}
+
+.winner-message {
+  color: #64748b;
+  font-size: 1.1rem;
+  margin: 0.5rem 0;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.contact-seller-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  padding: 1rem 2.5rem;
+  border-radius: 15px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+  transition: all 0.3s ease;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-top: 1rem;
+}
+
+.contact-seller-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(16, 185, 129, 0.4);
+}
+
+.contact-seller-btn:active {
+  transform: translateY(-1px);
+}
+
+/* No winner state */
+.winner-empty {
+  text-align: center;
+  color: #64748b;
+  font-size: 1.2rem;
+  padding: 3rem 2rem;
+  background: #f8fafc;
+  border-radius: 16px;
+  margin: 2rem auto;
+  max-width: 400px;
+  border: 2px dashed #cbd5e1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .auction-winner-display {
+    margin: 1rem;
+    padding: 2rem 1.5rem;
+    max-width: none;
+  }
+  
+  .winner-circular-avatar {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .winner-display-name {
+    font-size: 1.7rem;
+  }
+  
+  .winner-bid-amount {
+    font-size: 1.2rem;
+    padding: 0.8rem 1.5rem;
+    min-width: 180px;
+  }
+  
+  .contact-seller-btn {
+    padding: 0.9rem 2rem;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .auction-winner-display {
+    padding: 1.5rem 1rem;
+  }
+  
+  .winner-circular-avatar {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .winner-display-name {
+    font-size: 1.5rem;
+  }
+  
+  .winner-bid-amount {
+    font-size: 1.1rem;
+    padding: 0.7rem 1.2rem;
+    min-width: 160px;
+  }
+  
+  .contact-seller-btn {
+    padding: 0.8rem 1.5rem;
+    font-size: 0.95rem;
+  }
+}
   align-items: center;
   justify-content: center;
   gap: 8px;
@@ -3951,6 +4218,121 @@ display: inline-block;
   
   .info-value {
     font-size: 0.9375rem;
+  }
+}
+
+/* Spinner Animation for Payment Loading */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Payment Status Indicators */
+.payment-required-banner {
+  background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+  border: 1px solid #f59e0b;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+
+.payment-status-pending {
+  background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%);
+  color: #92400e;
+}
+
+.payment-status-approved {
+  background: linear-gradient(135deg, #d1fae5 0%, #10b981 100%);
+  color: #065f46;
+}
+
+.payment-status-rejected {
+  background: linear-gradient(135deg, #fee2e2 0%, #ef4444 100%);
+  color: #dc2626;
+}
+
+/* Payment Modal Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Modal overlay styles */
+.payment-modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 999999 !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(4px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.payment-modal-content {
+  position: relative !important;
+  background-color: white !important;
+  border-radius: 16px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  max-width: 56rem !important;
+  width: 90% !important;
+  max-height: 95vh !important;
+  overflow-y: auto !important;
+  z-index: 1000000 !important;
+}
+
+/* Enhanced hover effects for payment buttons */
+.payment-button-hover {
+  transition: all 0.3s ease;
+}
+
+.payment-button-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Gradient text effect */
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Status card animations */
+.status-card-bounce {
+  animation: bounce 0.6s ease-in-out;
+}
+
+@keyframes bounce {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translate3d(0,0,0);
+  }
+  40%, 43% {
+    transform: translate3d(0,-8px,0);
+  }
+  70% {
+    transform: translate3d(0,-4px,0);
+  }
+  90% {
+    transform: translate3d(0,-2px,0);
   }
 }
 

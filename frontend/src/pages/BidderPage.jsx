@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../utils/AuthContext';
 import api from '../utils/api';
-import { ArrowLeft, User, DollarSign, Clock, Gavel } from 'lucide-react';
+import { ArrowLeft, User, DollarSign, Clock, Gavel, CreditCard, AlertCircle } from 'lucide-react';
+import WinnerCard from '../components/WinnerCard';
+import PaymentModal from '../components/PaymentModal';
+import PaymentStatusIndicator from '../components/PaymentStatusIndicator';
 
 const BidderPage = () => {
   const { id } = useParams();
@@ -14,6 +17,8 @@ const BidderPage = () => {
   const [bidError, setBidError] = useState('');
   const [bidLoading, setBidLoading] = useState(false);
   const [userBidHistory, setUserBidHistory] = useState([]);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState(null);
 
   useEffect(() => {
     fetchAuctionDetails();
@@ -23,6 +28,27 @@ const BidderPage = () => {
     }
     // eslint-disable-next-line
   }, [id, user]);
+
+  // Check payment status for reserve auctions
+  useEffect(() => {
+    if (auction && auction.auctionType === 'reserve' && user && user._id) {
+      checkPaymentStatus();
+    }
+  }, [auction, user]);
+
+  // Check payment status for reserve auctions
+  const checkPaymentStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await api.get(`/payments/payment-status/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPaymentStatus(response.data);
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+      setPaymentStatus({ hasPayment: false, canBid: false });
+    }
+  };
   // Fetch user's bid history for this auction
   const fetchUserBidHistory = async () => {
     try {
@@ -44,6 +70,15 @@ const BidderPage = () => {
       }
     } catch (err) {
       setUserBidHistory([]);
+    }
+  };
+
+  const getWinner = (auction) => {
+    if (!auction || !auction.bids || auction.bids.length === 0) return null;
+    try {
+      return auction.bids.reduce((max, bid) => (bid.amount > (max.amount || 0) ? bid : max), auction.bids[0]);
+    } catch (err) {
+      return auction.bids[0];
     }
   };
 
@@ -263,84 +298,290 @@ const BidderPage = () => {
           {/* Details Section */}
           <div className="auction-details-info-section">
             <div className="auction-details-stats">
-              <div className="auction-details-stat-card auction-details-starting-amount">
-                <DollarSign className="auction-details-stat-icon" />
-                <div className="auction-details-stat-content">
-                  <span className="auction-details-stat-label">Starting Amount</span>
-                  <span className="auction-details-stat-value">{formatPrice(auction.startingPrice || 0)}</span>
-                </div>
-              </div>
-              {auction.auctionType === 'reserve' ? (
-                <div className="auction-details-stat-card auction-details-current-bid">
-                  <DollarSign className="auction-details-stat-icon" />
-                  <div className="auction-details-stat-content">
-                    <span className="auction-details-stat-label">Your Highest Bid</span>
-                    <span className="auction-details-stat-value">
-                      {(() => {
-                        if (!userBidHistory || userBidHistory.length === 0) return formatPrice(0);
-                        const highestBid = userBidHistory.reduce((max, bid) => bid.amount > max.amount ? bid : max, userBidHistory[0]);
-                        return formatPrice(highestBid.amount);
-                      })()}
-                    </span>
+              {/* Show starting/current/reserved only when auction is active */}
+              {(!(auction.status === 'ended' || auction.status === 'stopped')) ? (
+                <>
+                  <div className="auction-details-stat-card auction-details-starting-amount">
+                    <DollarSign className="auction-details-stat-icon" />
+                    <div className="auction-details-stat-content">
+                      <span className="auction-details-stat-label">Starting Amount</span>
+                      <span className="auction-details-stat-value">{formatPrice(auction.startingPrice || 0)}</span>
+                    </div>
                   </div>
-                </div>
+                  {auction.auctionType === 'reserve' ? (
+                    <div className="auction-details-stat-card auction-details-current-bid">
+                      <DollarSign className="auction-details-stat-icon" />
+                      <div className="auction-details-stat-content">
+                        <span className="auction-details-stat-label">Your Highest Bid</span>
+                        <span className="auction-details-stat-value">
+                          {(() => {
+                            if (!userBidHistory || userBidHistory.length === 0) return formatPrice(0);
+                            const highestBid = userBidHistory.reduce((max, bid) => bid.amount > max.amount ? bid : max, userBidHistory[0]);
+                            return formatPrice(highestBid.amount);
+                          })()}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="auction-details-stat-card auction-details-current-bid">
+                      <DollarSign className="auction-details-stat-icon" />
+                      <div className="auction-details-stat-content">
+                        <span className="auction-details-stat-label">Current Bid</span>
+                        <span className="auction-details-stat-value">{formatPrice(auction.currentBid || 0)}</span>
+                      </div>
+                    </div>
+                  )}
+                  {/* Reserved Amount for reserve auctions */}
+                  {auction.auctionType === 'reserve' && auction.reservedAmount && (
+                    <div className="auction-details-stat-card auction-details-reserved-amount">
+                      <DollarSign className="auction-details-stat-icon" />
+                      <div className="auction-details-stat-content">
+                        <span className="auction-details-stat-label">Reserved Amount</span>
+                        <span className="auction-details-stat-value">{formatPrice(auction.reservedAmount)}</span>
+                      </div>
+                    </div>
+                  )}
+                </>
               ) : (
-                <div className="auction-details-stat-card auction-details-current-bid">
-                  <DollarSign className="auction-details-stat-icon" />
-                  <div className="auction-details-stat-content">
-                    <span className="auction-details-stat-label">Current Bid</span>
-                    <span className="auction-details-stat-value">{formatPrice(auction.currentBid || 0)}</span>
-                  </div>
-                </div>
-              )}
-              {/* Reserved Amount for reserve auctions */}
-              {auction.auctionType === 'reserve' && auction.reservedAmount && (
-                <div className="auction-details-stat-card auction-details-reserved-amount">
-                  <DollarSign className="auction-details-stat-icon" />
-                  <div className="auction-details-stat-content">
-                    <span className="auction-details-stat-label">Reserved Amount</span>
-                    <span className="auction-details-stat-value">{formatPrice(auction.reservedAmount)}</span>
-                  </div>
-                </div>
+                // Auction ended/not active: no starting/current/reserve cards (these are not relevant)
+                <></>
               )}
             </div>
 
              
-            {/* Conditional Bid UI */}
-            {auction.auctionType !== 'reserve' ? (
-              <form
-                className="auction-details-place-bid-section"
-                onSubmit={e => {
-                  e.preventDefault();
-                  handlePlaceBid();
-                }}
-              >
-                <h3>Place Your Bid</h3>
-                <input
-                  type="number"
-                  min={auction.currentBid || auction.startingPrice || 0}
-                  placeholder="Enter bid amount"
-                  className="auction-details-bid-input"
-                  value={bidAmount}
-                  onChange={e => setBidAmount(e.target.value)}
-                  disabled={bidLoading}
-                />
-                <button
-                  type="submit"
-                  className="auction-details-place-bid-btn"
-                  disabled={bidLoading}
-                >
-                  {bidLoading ? 'Placing Bid...' : 'Place Bid'}
-                </button>
-
-                {bidError && <div style={{ color: 'red', marginTop: '8px' }}>{bidError}</div>}
-              </form>
+            {/* Conditional Bid UI or Winner UI */}
+            {(auction.status === 'ended' || auction.status === 'stopped') ? (
+              (() => {
+                const winner = getWinner(auction);
+                if (!winner) return <div className="winner-empty">No winner — no bids were placed.</div>;
+                return <WinnerCard auction={auction} winner={winner} user={user} />;
+              })()
             ) : (
-              <div className="auction-details-reserve-section">
-                <h3>Reserve Auction Participation</h3>
-                <p>To participate in this reserve auction, you must pay an initial amount. Click below to get payment details.</p>
-                <button className="auction-details-payment-details-btn">Click here to get payment details</button>
-              </div>
+              // Auction is active -> original bid UI
+              (auction.auctionType !== 'reserve') ? (
+                <form
+                  className="auction-details-place-bid-section"
+                  onSubmit={e => {
+                    e.preventDefault();
+                    handlePlaceBid();
+                  }}
+                >
+                  <h3>Place Your Bid</h3>
+                  <input
+                    type="number"
+                    min={auction.currentBid || auction.startingPrice || 0}
+                    placeholder="Enter bid amount"
+                    className="auction-details-bid-input"
+                    value={bidAmount}
+                    onChange={e => setBidAmount(e.target.value)}
+                    disabled={bidLoading}
+                  />
+                  <button
+                    type="submit"
+                    className="auction-details-place-bid-btn"
+                    disabled={bidLoading}
+                  >
+                    {bidLoading ? 'Placing Bid...' : 'Place Bid'}
+                  </button>
+
+                  {bidError && <div style={{ color: 'red', marginTop: '8px' }}>{bidError}</div>}
+                </form>
+              ) : (
+                // Reserve auction payment workflow
+                <div className="auction-details-reserve-section">
+                  <h3>Reserve Auction Participation</h3>
+                  
+                  {/* Payment Status Display */}
+                  {paymentStatus && paymentStatus.hasPayment && (
+                    <div style={{ marginBottom: '1rem' }}>
+                      <PaymentStatusIndicator paymentRequest={paymentStatus.paymentRequest} />
+                    </div>
+                  )}
+
+                  {/* Payment workflow UI */}
+                  {!paymentStatus || !paymentStatus.hasPayment ? (
+                    // No payment submitted yet
+                    <div>
+                      <div style={{
+                        background: '#fef3c7',
+                        border: '1px solid #f59e0b',
+                        borderRadius: '8px',
+                        padding: '1rem',
+                        marginBottom: '1rem'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                          <AlertCircle style={{ width: '1.25rem', height: '1.25rem', color: '#f59e0b' }} />
+                          <h4 style={{ margin: 0, color: '#92400e', fontSize: '1rem', fontWeight: 600 }}>
+                            Payment Required
+                          </h4>
+                        </div>
+                        <p style={{ margin: 0, color: '#92400e', fontSize: '0.875rem', lineHeight: '1.4' }}>
+                          To participate in this reserve auction, you must pay an initial amount. 
+                          This payment ensures your commitment to the auction process.
+                        </p>
+                      </div>
+                      
+                      <button
+                        onClick={() => setShowPaymentModal(true)}
+                        style={{
+                          background: '#4f46e5',
+                          color: 'white',
+                          padding: '0.75rem 1.5rem',
+                          borderRadius: '8px',
+                          border: 'none',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          fontSize: '1rem',
+                          transition: 'background-color 0.2s'
+                        }}
+                        onMouseOver={(e) => e.target.style.background = '#3730a3'}
+                        onMouseOut={(e) => e.target.style.background = '#4f46e5'}
+                      >
+                        <CreditCard style={{width: '1rem', height: '1rem'}} />
+                        Click here to get payment details
+                      </button>
+                    </div>
+                  ) : paymentStatus.paymentRequest.status === 'pending' ? (
+                    // Payment submitted, waiting for approval
+                    <div>
+                      <div style={{
+                        background: '#fef3c7',
+                        border: '1px solid #f59e0b',
+                        borderRadius: '8px',
+                        padding: '1rem',
+                        marginBottom: '1rem'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                          <Clock style={{ width: '1.25rem', height: '1.25rem', color: '#f59e0b' }} />
+                          <h4 style={{ margin: 0, color: '#92400e', fontSize: '1rem', fontWeight: 600 }}>
+                            Payment Under Review
+                          </h4>
+                        </div>
+                        <p style={{ margin: 0, color: '#92400e', fontSize: '0.875rem', lineHeight: '1.4' }}>
+                          Your payment is being verified by our admin team. You'll be notified once approved.
+                        </p>
+                        {paymentStatus.paymentRequest.adminNotes && (
+                          <p style={{color: '#dc2626', fontSize: '0.75rem', fontStyle: 'italic', marginTop: '0.5rem'}}>
+                            Note: {paymentStatus.paymentRequest.adminNotes}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <button
+                        onClick={() => setShowPaymentModal(true)}
+                        style={{
+                          background: '#6b7280',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '6px',
+                          border: 'none',
+                          fontSize: '0.875rem',
+                          fontWeight: 600,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        View Payment Details
+                      </button>
+                    </div>
+                  ) : paymentStatus.paymentRequest.status === 'rejected' ? (
+                    // Payment rejected
+                    <div>
+                      <div style={{
+                        background: '#fef2f2',
+                        border: '1px solid #ef4444',
+                        borderRadius: '8px',
+                        padding: '1rem',
+                        marginBottom: '1rem'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                          <AlertCircle style={{ width: '1.25rem', height: '1.25rem', color: '#ef4444' }} />
+                          <h4 style={{ margin: 0, color: '#dc2626', fontSize: '1rem', fontWeight: 600 }}>
+                            Payment Rejected
+                          </h4>
+                        </div>
+                        <p style={{ margin: 0, color: '#dc2626', fontSize: '0.875rem', lineHeight: '1.4' }}>
+                          Your payment verification was unsuccessful. Please submit a new payment.
+                        </p>
+                        {paymentStatus.paymentRequest.adminNotes && (
+                          <p style={{color: '#dc2626', fontSize: '0.75rem', fontStyle: 'italic', marginTop: '0.5rem'}}>
+                            Reason: {paymentStatus.paymentRequest.adminNotes}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <button
+                        onClick={() => setShowPaymentModal(true)}
+                        style={{
+                          background: '#ef4444',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '6px',
+                          border: 'none',
+                          fontSize: '0.875rem',
+                          fontWeight: 600,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Submit New Payment
+                      </button>
+                    </div>
+                  ) : (
+                    // Payment approved - show bidding interface
+                    <div>
+                      <div style={{
+                        background: '#f0fdf4',
+                        border: '1px solid #10b981',
+                        borderRadius: '8px',
+                        padding: '1rem',
+                        marginBottom: '1rem'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                          <Gavel style={{ width: '1.25rem', height: '1.25rem', color: '#10b981' }} />
+                          <h4 style={{ margin: 0, color: '#065f46', fontSize: '1rem', fontWeight: 600 }}>
+                            Payment Approved - You Can Bid!
+                          </h4>
+                        </div>
+                        <p style={{ margin: 0, color: '#065f46', fontSize: '0.875rem', lineHeight: '1.4' }}>
+                          Your payment has been verified. You can now place bids in this reserve auction.
+                        </p>
+                      </div>
+
+                      {/* Bidding form for approved reserve auction */}
+                      <form
+                        className="auction-details-place-bid-section"
+                        onSubmit={e => {
+                          e.preventDefault();
+                          handlePlaceBid();
+                        }}
+                        style={{ marginTop: '1rem' }}
+                      >
+                        <h4>Place Your Bid</h4>
+                        <input
+                          type="number"
+                          min={auction.currentBid || auction.startingPrice || 0}
+                          placeholder="Enter bid amount"
+                          className="auction-details-bid-input"
+                          value={bidAmount}
+                          onChange={e => setBidAmount(e.target.value)}
+                          disabled={bidLoading}
+                        />
+                        <button
+                          type="submit"
+                          className="auction-details-place-bid-btn"
+                          disabled={bidLoading}
+                        >
+                          {bidLoading ? 'Placing Bid...' : 'Place Bid'}
+                        </button>
+
+                        {bidError && <div style={{ color: 'red', marginTop: '8px' }}>{bidError}</div>}
+                      </form>
+                    </div>
+                  )}
+                </div>
+              )
             )}
           </div>
 
@@ -377,6 +618,19 @@ const BidderPage = () => {
             </div>
 
         </div>
+
+        {/* Payment Modal */}
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => {
+            setShowPaymentModal(false);
+            // Refresh payment status after modal closes
+            if (auction && auction.auctionType === 'reserve') {
+              checkPaymentStatus();
+            }
+          }}
+          auctionId={id}
+        />
       </div>
     </div>
   );

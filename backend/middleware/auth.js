@@ -28,6 +28,8 @@ const auth = async (req, res, next) => {
 // Admin only middleware
 const adminAuth = async (req, res, next) => {
   try {
+    console.log('AdminAuth - req.user:', req.user);
+    console.log('AdminAuth - req.user.role:', req.user.role);
     if (req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Admin access required' });
     }

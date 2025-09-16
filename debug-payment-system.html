@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Payment Submission</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 4px; }
+        .error { background: #f8d7da; color: #721c24; }
+        .success { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Payment System Debug Tool</h1>
+        
+        <div class="test-section">
+            <h3>🔍 Test Backend Connectivity</h3>
+            <button onclick="testBackend()">Test Backend Connection</button>
+            <div id="backend-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔑 Test Admin Authentication</h3>
+            <input type="text" id="admin-token" placeholder="Enter admin token" style="width: 300px; padding: 8px; margin: 5px;">
+            <br>
+            <button onclick="testAdminAuth()">Test Admin Access</button>
+            <div id="admin-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 Fetch Payment Requests</h3>
+            <button onclick="fetchPaymentRequests()">Get Payment Requests</button>
+            <div id="payments-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>💰 Submit Test Payment</h3>
+            <input type="text" id="auction-id" placeholder="Auction ID" style="width: 200px; padding: 8px; margin: 5px;"><br>
+            <input type="text" id="user-token" placeholder="User Token" style="width: 200px; padding: 8px; margin: 5px;"><br>
+            <button onclick="submitTestPayment()">Submit Test Payment</button>
+            <div id="submit-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Database Status</h3>
+            <button onclick="checkDatabaseStatus()">Check MongoDB Status</button>
+            <div id="db-result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        async function testBackend() {
+            const resultDiv = document.getElementById('backend-result');
+            try {
+                const response = await fetch('http://localhost:5001/api/auth/test', {
+                    method: 'GET'
+                });
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = '✅ Backend is running and accessible';
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = '❌ Backend responded with error: ' + response.status;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = '❌ Cannot connect to backend: ' + error.message;
+            }
+        }
+
+        async function testAdminAuth() {
+            const resultDiv = document.getElementById('admin-result');
+            const token = document.getElementById('admin-token').value;
+            
+            if (!token) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = '❌ Please enter admin token';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:5001/api/admin/payments/payment-requests', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `✅ Admin authenticated successfully<br>
+                                         Found ${data.paymentRequests?.length || 0} payment requests<br>
+                                         Counts: ${JSON.stringify(data.counts || {})}`;
+                } else {
+                    const errorData = await response.json();
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = '❌ Admin auth failed: ' + (errorData.message || response.status);
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = '❌ Admin auth error: ' + error.message;
+            }
+        }
+
+        async function fetchPaymentRequests() {
+            const resultDiv = document.getElementById('payments-result');
+            const token = document.getElementById('admin-token').value;
+            
+            if (!token) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = '❌ Please enter admin token first';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:5001/api/admin/payments/payment-requests', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <strong>Payment Requests (${data.paymentRequests?.length || 0}):</strong><br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    const errorData = await response.json();
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = '❌ Failed to fetch: ' + (errorData.message || response.status);
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = '❌ Fetch error: ' + error.message;
+            }
+        }
+
+        async function submitTestPayment() {
+            const resultDiv = document.getElementById('submit-result');
+            const auctionId = document.getElementById('auction-id').value;
+            const userToken = document.getElementById('user-token').value;
+            
+            if (!auctionId || !userToken) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = '❌ Please enter auction ID and user token';
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('auctionId', auctionId);
+                formData.append('paymentAmount', '100');
+                formData.append('paymentMethod', 'UPI');
+                formData.append('transactionId', 'TEST123456');
+                formData.append('paymentDate', new Date().toISOString().split('T')[0]);
+                
+                // Create a dummy file for testing
+                const blob = new Blob(['test payment screenshot'], { type: 'text/plain' });
+                formData.append('paymentScreenshot', blob, 'test-screenshot.txt');
+
+                const response = await fetch('http://localhost:5001/api/payments/submit-payment', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${userToken}`
+                    },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `✅ Payment submitted successfully<br>
+                                         <pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    const errorData = await response.json();
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = '❌ Payment submission failed: ' + (errorData.message || response.status);
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = '❌ Submission error: ' + error.message;
+            }
+        }
+
+        async function checkDatabaseStatus() {
+            const resultDiv = document.getElementById('db-result');
+            try {
+                const response = await fetch('http://localhost:5001/api/health', {
+                    method: 'GET'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `✅ Database Status:<br>
+                                         <pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = '❌ Health check failed: ' + response.status;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = '❌ Cannot check database: ' + error.message;
+            }
+        }
+
+        // Auto-test backend on load
+        window.onload = function() {
+            testBackend();
+        }
+    </script>
+</body>
+</html>

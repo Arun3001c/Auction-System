@@ -15,6 +15,10 @@ const adminSchema = new mongoose.Schema({
   phone: {
     type: String,
     required: true
+  },
+  role: {
+    type: String,
+    default: 'admin'
   }
 });
 

@@ -99,6 +99,82 @@ const WinnerNotifications = ({ show, onClose, forceRefresh }) => {
                   The seller will contact you soon to arrange payment and delivery. 
                   Please keep this notification for your records.
                 </p>
+                
+                {/* Debug info - remove this in production */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div style={{ fontSize: '10px', color: '#666', marginBottom: '8px' }}>
+                    Debug: AuctionType={winner.auction?.auctionType || 'unknown'}, SellerEmail={winner.auction?.seller?.email ? 'present' : 'missing'}
+                  </div>
+                )}
+                
+                {/* Contact Buttons - Always show at least one option */}
+                <div 
+                  className="winner-contact-buttons"
+                  style={{
+                    display: 'flex',
+                    gap: '12px',
+                    flexWrap: 'wrap',
+                    marginTop: '16px'
+                  }}
+                >
+                  {/* Always show Contact Seller as primary action */}
+                  <button 
+                    className="contact-seller-btn"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 16px',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      background: 'linear-gradient(135deg, #28a745, #20c997)',
+                      color: 'white',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onClick={() => {
+                      const sellerEmail = winner.auction?.seller?.email || 'seller@example.com';
+                      const auctionTitle = winner.auction?.title || 'Auction Item';
+                      const amount = formatPrice(winner.amount, winner.auction?.currency);
+                      window.location.href = `mailto:${sellerEmail}?subject=Auction Won - ${auctionTitle}&body=Hello, I won your auction "${auctionTitle}" with a winning bid of ${amount}. Please contact me to arrange payment and delivery.`;
+                    }}
+                    title="Contact Seller"
+                  >
+                    <Mail className="contact-btn-icon" style={{ width: '16px', height: '16px' }} />
+                    Contact Seller
+                  </button>
+                  
+                  {/* Show Contact Admin for reserve auctions OR as backup option */}
+                  {(winner.auction?.auctionType === 'reserve' || !winner.auction?.seller?.email) && (
+                    <button 
+                      className="contact-admin-btn"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '10px 16px',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        background: 'linear-gradient(135deg, #007bff, #0056b3)',
+                        color: 'white',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onClick={() => {
+                        const auctionTitle = winner.auction?.title || 'Auction Item';
+                        window.location.href = `mailto:admin@auctionsite.com?subject=Auction Winner Support - ${auctionTitle}&body=Hello, I won the auction "${auctionTitle}" and need assistance with contacting the seller or completing the transaction.`;
+                      }}
+                      title="Contact Admin for Support"
+                    >
+                      <Mail className="contact-btn-icon" style={{ width: '16px', height: '16px' }} />
+                      Contact Admin
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))
@@ -248,10 +324,58 @@ const WinnerNotifications = ({ show, onClose, forceRefresh }) => {
           border: 1px solid #2196f3;
           border-radius: 8px;
           padding: 12px;
-          margin: 0;
+          margin: 0 0 16px 0;
           color: #1976d2;
           font-size: 14px;
           line-height: 1.5;
+        }
+
+        .winner-contact-buttons {
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+          justify-content: flex-start;
+        }
+
+        .contact-seller-btn, .contact-admin-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 16px;
+          border: none;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-decoration: none;
+        }
+
+        .contact-seller-btn {
+          background: linear-gradient(135deg, #28a745, #20c997);
+          color: white;
+        }
+
+        .contact-seller-btn:hover {
+          background: linear-gradient(135deg, #218838, #1ea884);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .contact-admin-btn {
+          background: linear-gradient(135deg, #007bff, #0056b3);
+          color: white;
+        }
+
+        .contact-admin-btn:hover {
+          background: linear-gradient(135deg, #0056b3, #003d82);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        }
+
+        .contact-btn-icon {
+          width: 16px;
+          height: 16px;
         }
 
         .winner-notifications-footer {
@@ -315,6 +439,17 @@ const WinnerNotifications = ({ show, onClose, forceRefresh }) => {
 
           .winner-card-details {
             font-size: 14px;
+          }
+
+          .winner-contact-buttons {
+            flex-direction: column;
+            gap: 8px;
+          }
+
+          .contact-seller-btn, .contact-admin-btn {
+            width: 100%;
+            justify-content: center;
+            padding: 12px 16px;
           }
         }
       `}</style>

@@ -15,6 +15,8 @@
   const adminAuctionRoutes = require('./routes/adminAuction');
   const adminUserRoutes = require('./routes/adminUser');
   const adminAuthRoutes = require('./routes/adminAuth');
+  const paymentRoutes = require('./routes/payment');
+  const adminPaymentRoutes = require('./routes/adminPayment');
 
   const adminHandleAuctionsRoutes = require('./routes/adminHandleAuctions');
   
@@ -54,8 +56,11 @@
   app.use('/api/auth', authRoutes);
   app.use('/api/auctions', auctionRoutes);
   app.use('/api/contact', contactRoutes);
+  app.use('/api/payments', paymentRoutes);
   const adminRoutes = require('./routes/admin');
   app.use('/api/admin', adminRoutes);
+  app.use('/api/admin', adminAuctionRoutes); // Mount admin auction routes
+  app.use('/api/admin/payments', adminPaymentRoutes);
   app.use('/api/admin/handle-auctions', adminHandleAuctionsRoutes);
   app.use('/api/admin/auth', adminAuthRoutes);
 
@@ -101,10 +106,11 @@
   });
 
   // Graceful shutdown
+  /*
   process.on('SIGINT', () => {
     console.log('\nReceived SIGINT. Graceful shutdown...');
     stopAuctionScheduler(auctionSchedulerInterval);
-    mongoose.connection.close(() => {
+    mongoose.connection.close().then(() => {
       console.log('MongoDB connection closed.');
       process.exit(0);
     });
@@ -118,3 +124,4 @@
       process.exit(0);
     });
   });
+  */

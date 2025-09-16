@@ -100,7 +100,7 @@ const auctionSchema = new mongoose.Schema({
   }],
   status: {
     type: String,
-    enum: ['upcoming', 'active', 'ended', 'cancelled', 'deleted', 'stopped'],
+    enum: ['upcoming', 'active', 'ended', 'cancelled', 'deleted', 'stopped', 'pending'],
     default: 'upcoming'
   },
   featured: {
@@ -113,6 +113,37 @@ const auctionSchema = new mongoose.Schema({
     unique: true,
     trim: true,
     default: '-'
+  },
+  // Certificate fields for reserve auctions
+  certificates: [{
+    type: String,
+    default: []
+  }],
+  needsApproval: {
+    type: Boolean,
+    default: false
+  },
+  approvalStatus: {
+    type: String,
+    enum: {
+      values: ['pending', 'approved', 'rejected'],
+      message: '{VALUE} is not a valid approval status'
+    },
+    default: undefined,
+    required: false
+  },
+  adminNotes: {
+    type: String,
+    default: null
+  },
+  reviewedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  reviewedAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true
@@ -137,8 +168,8 @@ auctionSchema.virtual('timeLeft').get(function() {
 
 // Update status based on time
 auctionSchema.methods.updateStatus = function() {
-  // Don't overwrite deleted status
-  if (this.status === 'deleted') return Promise.resolve(this);
+  // Don't overwrite deleted or pending status
+  if (this.status === 'deleted' || this.status === 'pending') return Promise.resolve(this);
   const now = new Date();
   if (now < this.startDate) {
     this.status = 'upcoming';
