@@ -253,7 +253,11 @@ const BidderPage = () => {
           <h1 className="auction-title">{auctionTitle}</h1>
           <div className="auction-type-info">
             <span className="auction-type-label">Auction Type:</span>
-            <span className="auction-type-value">{auction.auctionType ? auction.auctionType.charAt(0).toUpperCase() + auction.auctionType.slice(1) : 'Unknown'}</span>
+            <span className="auction-type-value">
+              {auction.auctionType === 'reserve' ? 'Reserve Auction' : 
+               auction.auctionType === 'standard' ? 'Standard Auction' :
+               auction.auctionType ? auction.auctionType.charAt(0).toUpperCase() + auction.auctionType.slice(1) + ' Auction' : 'Unknown'}
+            </span>
           </div>
           <div className="seller-info">
             <User className="seller-icon" />
@@ -308,6 +312,16 @@ const BidderPage = () => {
                       <span className="auction-details-stat-value">{formatPrice(auction.startingPrice || 0)}</span>
                     </div>
                   </div>
+                  {/* Minimum Amount for reserve auctions */}
+                  {auction.auctionType === 'reserve' && (
+                    <div className="auction-details-stat-card auction-details-minimum-amount">
+                      <DollarSign className="auction-details-stat-icon" />
+                      <div className="auction-details-stat-content">
+                        <span className="auction-details-stat-label">Minimum Amount</span>
+                        <span className="auction-details-stat-value">{formatPrice(auction.minimumPrice || auction.startingPrice || 0)}</span>
+                      </div>
+                    </div>
+                  )}
                   {auction.auctionType === 'reserve' ? (
                     <div className="auction-details-stat-card auction-details-current-bid">
                       <DollarSign className="auction-details-stat-icon" />

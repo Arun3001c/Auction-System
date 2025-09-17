@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, Check, X, Clock, Search, Filter } from 'lucide-react';
+import { Eye, Check, X, Clock } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
@@ -8,8 +8,30 @@ const AdminPaymentRequests = () => {
   const [loading, setLoading] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [currentImageUrl, setCurrentImageUrl] = useState(null);
+
+  // Helper function to format image URL
+  const formatImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    
+    // If it's already a full URL (Cloudinary or other), return as is
+    if (imagePath.startsWith('http')) {
+      return imagePath;
+    }
+    
+    // For legacy local files, convert to server URL
+    // Convert Windows backslashes to forward slashes for web URLs
+    const normalizedPath = imagePath.replace(/\\/g, '/');
+    
+    // Ensure path starts with uploads/ 
+    const finalPath = normalizedPath.startsWith('uploads/') 
+      ? normalizedPath 
+      : `uploads/${normalizedPath}`;
+    
+    return `http://localhost:5001/${finalPath}`;
+  };
   const [filter, setFilter] = useState('all');
-  const [paymentTypeFilter, setPaymentTypeFilter] = useState('winner_payment'); // Default to winner payments
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState('all'); // Default to all payments
   const [searchTerm, setSearchTerm] = useState('');
   const [counts, setCounts] = useState({ 
     pending: 0, 
@@ -29,6 +51,12 @@ const AdminPaymentRequests = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('adminToken');
+      console.log('Fetching payment requests with filters:', { 
+        status: filter, 
+        paymentType: paymentTypeFilter, 
+        page 
+      });
+      
       const response = await axios.get('/api/admin/payments/payment-requests', {
         headers: { Authorization: `Bearer ${token}` },
         params: {
@@ -38,6 +66,8 @@ const AdminPaymentRequests = () => {
           limit: 20
         }
       });
+
+      console.log('Received payment requests:', response.data);
 
       setPaymentRequests(response.data.paymentRequests);
       setCounts(response.data.counts);
@@ -270,7 +300,19 @@ const AdminPaymentRequests = () => {
                     </span>
                   </td>
                   <td>
-                    <div className="payment-amount">{request.paymentAmount} {request.auction.currency}</div>
+                    <div className="payment-amount">
+                      {request.paymentAmount} {request.auction.currency}
+                      {request.paymentType === 'winner_payment' && request.auction.auctionType === 'reserve' && (
+                        <div className="payment-breakdown">
+                          <small style={{ color: '#059669', fontWeight: '500' }}>
+                            Additional amount for reserve auction
+                          </small>
+                          <small style={{ color: '#6b7280', fontSize: '0.75rem', display: 'block' }}>
+                            (Winner bid - Min. price already paid)
+                          </small>
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td>
                     <span className="payment-method">{request.paymentMethod}</span>
@@ -402,6 +444,22 @@ const AdminPaymentRequests = () => {
                   <div className="detail-item">
                     <label className="detail-label">Payment Amount</label>
                     <p className="detail-value">{selectedRequest.paymentAmount} {selectedRequest.auction.currency}</p>
+                    {selectedRequest.paymentType === 'winner_payment' && selectedRequest.auction.auctionType === 'reserve' && (
+                      <div className="detail-subtext" style={{ backgroundColor: '#f0f9ff', padding: '0.75rem', borderRadius: '6px', marginTop: '0.5rem' }}>
+                        <p style={{ margin: '0 0 0.25rem 0', fontSize: '0.875rem', fontWeight: '600', color: '#1e40af' }}>
+                          💡 Reserve Auction Payment Breakdown:
+                        </p>
+                        <p style={{ margin: '0.25rem 0', fontSize: '0.8rem', color: '#374151' }}>
+                          • This is the <strong>additional amount</strong> the winner needs to pay
+                        </p>
+                        <p style={{ margin: '0.25rem 0', fontSize: '0.8rem', color: '#374151' }}>
+                          • Minimum price was already paid as participation fee
+                        </p>
+                        <p style={{ margin: '0.25rem 0', fontSize: '0.8rem', color: '#374151' }}>
+                          • Calculation: Winner's bid - Minimum price = Additional payment
+                        </p>
+                      </div>
+                    )}
                   </div>
                   <div className="detail-item">
                     <label className="detail-label">Payment Type</label>
@@ -430,10 +488,17 @@ const AdminPaymentRequests = () => {
                 <label className="detail-label">Payment Screenshot</label>
                 <div className="screenshot-container">
                   <img
-                    src={selectedRequest.paymentScreenshot}
+                    src={formatImageUrl(selectedRequest.paymentScreenshot)}
                     alt="Payment Screenshot"
                     className="payment-screenshot"
-                    onClick={() => setShowImageModal(true)}
+                    onClick={() => {
+                      setCurrentImageUrl(formatImageUrl(selectedRequest.paymentScreenshot));
+                      setShowImageModal(true);
+                    }}
+                    onError={(e) => {
+                      console.error('Failed to load payment screenshot:', selectedRequest.paymentScreenshot);
+                      e.target.src = 'https://via.placeholder.com/300x200?text=Image+Not+Found';
+                    }}
                   />
                   <p className="screenshot-hint">Click to view full size</p>
                 </div>
@@ -475,19 +540,35 @@ const AdminPaymentRequests = () => {
       )}
 
       {/* Image Modal */}
-      {showImageModal && selectedRequest && (
-        <div className="image-modal-overlay">
-          <div className="image-modal-container">
+      {showImageModal && currentImageUrl && (
+        <div 
+          className="image-modal-overlay"
+          onClick={() => {
+            setShowImageModal(false);
+            setCurrentImageUrl(null);
+          }}
+        >
+          <div 
+            className="image-modal-container"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
-              onClick={() => setShowImageModal(false)}
+              onClick={() => {
+                setShowImageModal(false);
+                setCurrentImageUrl(null);
+              }}
               className="image-close-btn"
             >
               <X className="close-icon-large" />
             </button>
             <img
-              src={selectedRequest.paymentScreenshot}
+              src={currentImageUrl}
               alt="Payment Screenshot"
               className="full-image"
+              onError={(e) => {
+                console.error('Failed to load modal image:', currentImageUrl);
+                e.target.src = 'https://via.placeholder.com/600x400?text=Image+Not+Found';
+              }}
             />
           </div>
         </div>

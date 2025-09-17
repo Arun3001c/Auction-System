@@ -4312,6 +4312,38 @@ display: inline-block;
   color: #3b82f6; /* Blue for bid count */
 }
 
+/* Special styling for minimum amount in reserve auctions */
+.auction-details-minimum-amount {
+  background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%) !important;
+  border: 2px solid #f59e0b !important;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.15) !important;
+}
+
+.auction-details-minimum-amount:hover {
+  background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%) !important;
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.25) !important;
+}
+
+.auction-details-minimum-amount .auction-details-stat-icon {
+  color: #f59e0b !important;
+  background: rgba(245, 158, 11, 0.2);
+  padding: 0.5rem;
+  border-radius: 8px;
+}
+
+.auction-details-minimum-amount .auction-details-stat-label {
+  color: #92400e !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.auction-details-minimum-amount .auction-details-stat-value {
+  color: #92400e !important;
+  font-weight: 800;
+  font-size: 1.25rem;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .auction-details-stats {

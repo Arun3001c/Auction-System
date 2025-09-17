@@ -16,6 +16,72 @@ const WinnerPaymentModal = ({ isOpen, onClose, auction, winner }) => {
   });
   const [paymentStatus, setPaymentStatus] = useState(null);
 
+  // Calculate the payment amount based on auction type
+  const getPaymentAmount = () => {
+    if (!auction || !winner) return 0;
+    
+    // For reserve auctions, use minimumPrice as the reserve price
+    const minimumPrice = auction.minimumPrice || auction.reservePrice || auction.reservedAmount || 0;
+    
+    console.log('🔍 Payment Amount Calculation Debug:', {
+      auctionType: auction.auctionType,
+      minimumPrice: auction.minimumPrice,
+      reservePrice: auction.reservePrice,
+      reservedAmount: auction.reservedAmount,
+      finalMinimumPrice: minimumPrice,
+      winnerAmount: winner.amount,
+      auctionId: auction._id
+    });
+    
+    // For reserve auctions, calculate additional amount (winning bid - minimum price)
+    if (auction.auctionType === 'reserve') {
+      if (minimumPrice <= 0) {
+        console.log('⚠️ Reserve auction has no minimum price set');
+        return 0; // Return 0 to show error message
+      }
+      
+      // Calculate: winning bid - minimum price = additional amount to pay
+      const additionalAmount = (winner.amount || 0) - minimumPrice;
+      
+      console.log('💰 Reserve Auction Calculation:', {
+        minimumPrice: minimumPrice,
+        winnerBid: winner.amount,
+        additionalAmount: additionalAmount,
+        finalAmount: Math.max(additionalAmount, 0)
+      });
+      
+      if (additionalAmount <= 0) {
+        console.log('✅ No additional payment needed - winning bid equals minimum price');
+        return 0; // No additional payment needed
+      }
+      
+      return additionalAmount;
+    }
+    
+    // For other auction types, use the full winning bid amount
+    console.log('💰 Standard Auction - Using winner amount:', winner.amount);
+    return winner.amount || 0;
+  };
+
+  // Check if there's an issue with the reserve auction setup
+  const hasReservePriceIssue = () => {
+    if (auction?.auctionType === 'reserve') {
+      const minimumPrice = auction.minimumPrice || auction.reservePrice || auction.reservedAmount || 0;
+      return minimumPrice <= 0;
+    }
+    return false;
+  };
+
+  // Check if no additional payment is needed (winning bid = minimum price)
+  const isNoAdditionalPaymentNeeded = () => {
+    if (auction?.auctionType === 'reserve') {
+      const minimumPrice = auction.minimumPrice || auction.reservePrice || auction.reservedAmount || 0;
+      const additionalAmount = (winner?.amount || 0) - minimumPrice;
+      return minimumPrice > 0 && additionalAmount <= 0;
+    }
+    return false;
+  };
+
   useEffect(() => {
     if (isOpen && auction?._id) {
       checkWinnerPaymentStatus();
@@ -98,7 +164,10 @@ const WinnerPaymentModal = ({ isOpen, onClose, auction, winner }) => {
 
       console.log('🔄 Starting winner payment submission...', {
         auctionId: auction._id,
-        winnerAmount: winner?.amount,
+        auctionType: auction.auctionType,
+        reservePrice: auction.reservePrice,
+        winnerBidAmount: winner?.amount,
+        calculatedPaymentAmount: getPaymentAmount(),
         paymentData: {
           method: paymentData.paymentMethod,
           transactionId: paymentData.transactionId,
@@ -111,7 +180,7 @@ const WinnerPaymentModal = ({ isOpen, onClose, auction, winner }) => {
       const token = localStorage.getItem('token');
       const formData = new FormData();
       formData.append('auctionId', auction._id);
-      formData.append('winningAmount', winner?.amount || 0);
+      formData.append('winningAmount', getPaymentAmount()); // Use calculated payment amount
       formData.append('paymentMethod', paymentData.paymentMethod);
       formData.append('transactionId', paymentData.transactionId);
       formData.append('paymentDate', paymentData.paymentDate);
@@ -327,7 +396,14 @@ const WinnerPaymentModal = ({ isOpen, onClose, auction, winner }) => {
                   fontSize: '1.125rem',
                   margin: '0 0 16px 0'
                 }}>
-                  Complete your full payment to finalize the purchase
+                  {hasReservePriceIssue() 
+                    ? 'There is an issue with this auction\'s configuration'
+                    : isNoAdditionalPaymentNeeded()
+                    ? 'Your winning bid equals the minimum price - only pay the additional amount!'
+                    : auction.auctionType === 'reserve' 
+                    ? 'Pay the additional amount to complete your purchase'
+                    : 'Complete your full payment to finalize the purchase'
+                  }
                 </p>
                 <div style={{
                   marginTop: '16px',
@@ -336,24 +412,85 @@ const WinnerPaymentModal = ({ isOpen, onClose, auction, winner }) => {
                   padding: '16px',
                   border: '1px solid #fed7aa'
                 }}>
-                  <p style={{ 
-                    fontSize: '0.875rem', 
-                    color: '#6b7280', 
-                    margin: '0 0 4px 0' 
-                  }}>
-                    Full Payment Amount
-                  </p>
-                  <p style={{
-                    fontSize: '1.875rem',
-                    fontWeight: 'bold',
-                    color: '#f59e0b',
-                    margin: 0
-                  }}>
-                    {new Intl.NumberFormat('en-US', { 
-                      style: 'currency', 
-                      currency: auction?.currency || 'USD' 
-                    }).format(winner?.amount || 0)}
-                  </p>
+                  {hasReservePriceIssue() ? (
+                    // Show error message for misconfigured reserve auction
+                    <div style={{ textAlign: 'center' }}>
+                      <p style={{ 
+                        fontSize: '0.875rem', 
+                        color: '#dc2626', 
+                        margin: '0 0 8px 0',
+                        fontWeight: 'bold'
+                      }}>
+                        ⚠️ Auction Configuration Issue
+                      </p>
+                      <p style={{
+                        fontSize: '1rem',
+                        color: '#7f1d1d',
+                        margin: 0
+                      }}>
+                        This reserve auction has no minimum price set. Please contact the auction administrator.
+                      </p>
+                    </div>
+                  ) : isNoAdditionalPaymentNeeded() ? (
+                    // Show message when no additional payment needed (winning bid = minimum price)
+                    <div style={{ textAlign: 'center' }}>
+                      <p style={{ 
+                        fontSize: '0.875rem', 
+                        color: '#059669', 
+                        margin: '0 0 8px 0',
+                        fontWeight: 'bold'
+                      }}>
+                        ✅ Minimum Price Payment Only
+                      </p>
+                      <p style={{
+                        fontSize: '1.5rem',
+                        fontWeight: 'bold',
+                        color: '#10b981',
+                        margin: 0
+                      }}>
+                        No Additional Payment Required
+                      </p>
+                      <p style={{ 
+                        fontSize: '0.875rem', 
+                        color: '#065f46', 
+                        margin: '8px 0 0 0'
+                      }}>
+                        Your winning bid equals the minimum price.
+                      </p>
+                    </div>
+                  ) : (
+                    // Show normal payment amount
+                    <div>
+                      <p style={{ 
+                        fontSize: '0.875rem', 
+                        color: '#6b7280', 
+                        margin: '0 0 4px 0' 
+                      }}>
+                        {auction.auctionType === 'reserve' ? 'Additional Amount to Pay' : 'Full Payment Amount'}
+                      </p>
+                      <p style={{
+                        fontSize: '1.875rem',
+                        fontWeight: 'bold',
+                        color: '#f59e0b',
+                        margin: 0
+                      }}>
+                        {new Intl.NumberFormat('en-US', { 
+                          style: 'currency', 
+                          currency: auction?.currency || 'USD' 
+                        }).format(getPaymentAmount())}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {auction.auctionType === 'reserve' && !hasReservePriceIssue() && (
+                    <div style={{ marginTop: '8px', fontSize: '0.75rem', color: '#6b7280' }}>
+                      <p style={{ margin: '2px 0' }}>Your Winning Bid: {new Intl.NumberFormat('en-US', { style: 'currency', currency: auction?.currency || 'USD' }).format(winner?.amount || 0)}</p>
+                      <p style={{ margin: '2px 0' }}>Minimum Price: {new Intl.NumberFormat('en-US', { style: 'currency', currency: auction?.currency || 'USD' }).format(auction.minimumPrice || auction.reservePrice || auction.reservedAmount || 0)}</p>
+                      {getPaymentAmount() > 0 && (
+                        <p style={{ margin: '2px 0', fontWeight: 'bold', color: '#f59e0b' }}>Additional Amount: {new Intl.NumberFormat('en-US', { style: 'currency', currency: auction?.currency || 'USD' }).format(getPaymentAmount())}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -794,37 +931,106 @@ const WinnerPaymentModal = ({ isOpen, onClose, auction, winner }) => {
 
               {/* Action Button */}
               <div style={{ textAlign: 'center', paddingTop: '24px' }}>
-                <button
-                  onClick={() => setStep(2)}
-                  style={{
-                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                    color: 'white',
-                    fontWeight: 'bold',
-                    fontSize: '1.1rem',
-                    padding: '16px 32px',
+                {hasReservePriceIssue() ? (
+                  // Show contact message for misconfigured auction
+                  <div style={{
+                    background: 'linear-gradient(135deg, #fef2f2, #fee2e2)',
+                    border: '2px solid #dc2626',
                     borderRadius: '16px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    boxShadow: '0 12px 32px rgba(245, 158, 11, 0.4)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    margin: '0 auto',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.transform = 'translateY(-2px)';
-                    e.target.style.boxShadow = '0 16px 40px rgba(245, 158, 11, 0.5)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = '0 12px 32px rgba(245, 158, 11, 0.4)';
-                  }}
-                >
-                  <CheckCircle style={{ width: '20px', height: '20px' }} />
-                  <span>I have made the payment</span>
-                  <span style={{ fontSize: '1.2rem' }}>💰</span>
-                </button>
+                    padding: '16px',
+                    textAlign: 'center'
+                  }}>
+                    <p style={{ 
+                      color: '#991b1b', 
+                      fontSize: '1rem', 
+                      fontWeight: 'bold',
+                      margin: '0 0 8px 0'
+                    }}>
+                      Please contact the auction administrator to resolve this issue.
+                    </p>
+                    <button
+                      onClick={onClose}
+                      style={{
+                        background: '#dc2626',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        fontSize: '1rem',
+                        padding: '12px 24px',
+                        borderRadius: '12px',
+                        border: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Close
+                    </button>
+                  </div>
+                ) : isNoAdditionalPaymentNeeded() ? (
+                  // Show completion message when no additional payment needed
+                  <div style={{
+                    background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+                    border: '2px solid #10b981',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    textAlign: 'center'
+                  }}>
+                    <p style={{ 
+                      color: '#065f46', 
+                      fontSize: '1rem', 
+                      fontWeight: 'bold',
+                      margin: '0 0 8px 0'
+                    }}>
+                      🎉 Your purchase is complete! Only minimum price payment needed.
+                    </p>
+                    <button
+                      onClick={onClose}
+                      style={{
+                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        fontSize: '1rem',
+                        padding: '12px 24px',
+                        borderRadius: '12px',
+                        border: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Continue
+                    </button>
+                  </div>
+                ) : (
+                  // Show normal payment button
+                  <button
+                    onClick={() => setStep(2)}
+                    style={{
+                      background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                      color: 'white',
+                      fontWeight: 'bold',
+                      fontSize: '1.1rem',
+                      padding: '16px 32px',
+                      borderRadius: '16px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      boxShadow: '0 12px 32px rgba(245, 158, 11, 0.4)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      margin: '0 auto',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 16px 40px rgba(245, 158, 11, 0.5)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 12px 32px rgba(245, 158, 11, 0.4)';
+                    }}
+                  >
+                    <CheckCircle style={{ width: '20px', height: '20px' }} />
+                    <span>I have made the payment</span>
+                    <span style={{ fontSize: '1.2rem' }}>💰</span>
+                  </button>
+                )}
               </div>
             </div>
           )}

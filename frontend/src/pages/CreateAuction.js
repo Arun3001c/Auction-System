@@ -536,6 +536,7 @@ const CreateAuction = () => {
                         className="upload-button certificate-upload-button"
                         style={{
                           display: 'flex',
+                          color: '#f59e0b',
                           alignItems: 'center',
                           gap: '0.5rem',
                           padding: '0.75rem 1rem',

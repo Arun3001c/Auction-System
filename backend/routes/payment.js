@@ -3,7 +3,7 @@ const PaymentRequest = require('../models/PaymentRequest');
 const Auction = require('../models/Auction');
 const Winner = require('../models/Winner');
 const { auth } = require('../middleware/auth');
-const upload = require('../middleware/upload');
+const cloudinaryUpload = require('../middleware/cloudinaryUpload');
 const router = express.Router();
 
 // Get admin payment details for joining reserve auction
@@ -41,8 +41,15 @@ router.get('/payment-details/:auctionId', auth, async (req, res) => {
       });
     }
     
-    // Calculate initial payment amount (could be percentage of starting price)
-    const initialPaymentAmount = Math.max(auction.startingPrice * 0.1, 100); // 10% or minimum 100
+    // Calculate initial payment amount (use minimum price or fallback to 10% of starting price)
+    const initialPaymentAmount = auction.minimumPrice || Math.max(auction.startingPrice * 0.1, 100);
+    
+    console.log('Payment Details Debug:', {
+      auctionId: auction._id,
+      startingPrice: auction.startingPrice,
+      minimumPrice: auction.minimumPrice,
+      calculatedAmount: initialPaymentAmount
+    });
     
     // Return admin payment details
     const paymentDetails = {
@@ -64,7 +71,7 @@ router.get('/payment-details/:auctionId', auth, async (req, res) => {
         }
       },
       instructions: [
-        `Pay exactly ${initialPaymentAmount} ${auction.currency}`,
+        `Pay exactly ${initialPaymentAmount} ${auction.currency} (${auction.minimumPrice ? 'Minimum price for participation' : '10% of starting price'})`,
         'Take a clear screenshot of the payment confirmation',
         'Upload the screenshot using the form below',
         'Wait for admin verification before bidding'
@@ -83,7 +90,7 @@ router.get('/payment-details/:auctionId', auth, async (req, res) => {
 });
 
 // Submit payment request with screenshot
-router.post('/submit-payment', auth, upload.single('paymentScreenshot'), async (req, res) => {
+router.post('/submit-payment', auth, cloudinaryUpload.single('paymentScreenshot'), async (req, res) => {
   try {
     const { auctionId, paymentAmount, paymentMethod, transactionId, paymentDate } = req.body;
     
@@ -129,6 +136,15 @@ router.post('/submit-payment', auth, upload.single('paymentScreenshot'), async (
     });
     
     await paymentRequest.save();
+    
+    console.log('Payment request saved successfully:', {
+      id: paymentRequest._id,
+      user: req.user.fullName,
+      auction: auction.title,
+      amount: paymentRequest.paymentAmount,
+      paymentType: paymentRequest.paymentType,
+      status: paymentRequest.verificationStatus
+    });
     
     // Populate user and auction details for response
     await paymentRequest.populate('user', 'fullName email');
@@ -261,11 +277,51 @@ router.get('/winner-payment-details/:auctionId', auth, async (req, res) => {
       });
     }
     
+    // Calculate payment amount based on auction type
+    let paymentAmount;
+    let paymentDescription;
+    
+    // For reserve auctions, use minimumPrice as the reserve price
+    const minimumPrice = auction.minimumPrice || auction.reservePrice || auction.reservedAmount || 0;
+    
+    console.log('🔍 Backend Payment Calculation Debug:', {
+      auctionId: auction._id,
+      auctionType: auction.auctionType,
+      minimumPrice: auction.minimumPrice,
+      reservePrice: auction.reservePrice,
+      reservedAmount: auction.reservedAmount,
+      finalMinimumPrice: minimumPrice,
+      winnerAmount: winner.amount,
+      auctionTitle: auction.title
+    });
+    
+    if (auction.auctionType === 'reserve' && minimumPrice > 0) {
+      // For reserve auctions, calculate additional amount (winning bid - minimum price)
+      paymentAmount = winner.amount - minimumPrice;
+      paymentAmount = Math.max(paymentAmount, 0); // Ensure non-negative
+      paymentDescription = `Pay the additional amount of ${paymentAmount} ${auction.currency} (Your Bid: ${winner.amount} - Minimum Price: ${minimumPrice})`;
+      
+      console.log('💰 Backend Reserve Calculation:', {
+        minimumPrice: minimumPrice,
+        winnerBid: winner.amount,
+        additionalAmount: paymentAmount
+      });
+    } else {
+      // For other auction types, use full winning amount
+      paymentAmount = winner.amount;
+      paymentDescription = `Pay the full winning amount of ${paymentAmount} ${auction.currency}`;
+      
+      console.log('💰 Backend Standard Calculation:', { paymentAmount });
+    }
+    
     // Return admin payment details for winner payment
     const paymentDetails = {
       auctionId: auction._id,
       auctionTitle: auction.title,
-      winningAmount: winner.amount,
+      winningAmount: paymentAmount, // Use calculated amount
+      originalBidAmount: winner.amount,
+      minimumPrice: minimumPrice, // Use the calculated minimum price
+      auctionType: auction.auctionType,
       currency: auction.currency,
       paymentMethods: {
         upi: {
@@ -281,7 +337,7 @@ router.get('/winner-payment-details/:auctionId', auth, async (req, res) => {
         }
       },
       instructions: [
-        `Pay the full winning amount of ${winner.amount} ${auction.currency}`,
+        paymentDescription,
         'Take a clear screenshot of the payment confirmation',
         'Upload the screenshot using the form below',
         'Wait for admin verification to complete the purchase'
@@ -300,7 +356,7 @@ router.get('/winner-payment-details/:auctionId', auth, async (req, res) => {
 });
 
 // Submit winner payment request with screenshot
-router.post('/submit-winner-payment', auth, upload.single('paymentScreenshot'), async (req, res) => {
+router.post('/submit-winner-payment', auth, cloudinaryUpload.single('paymentScreenshot'), async (req, res) => {
   try {
     const { auctionId, winningAmount, paymentMethod, transactionId, paymentDate } = req.body;
     
@@ -344,25 +400,100 @@ router.post('/submit-winner-payment', auth, upload.single('paymentScreenshot'), 
     
     console.log('✅ Submit Winner payment validation passed');
     
-    // Check if user already has a winner payment request
-    const existingRequest = await PaymentRequest.findOne({
+    // Check if user already has ANY payment request for this auction
+    console.log('🔍 Looking for existing payment request:', {
       auction: auctionId,
       user: req.user._id,
-      paymentType: 'winner_payment'
+      auctionType: typeof auctionId,
+      userType: typeof req.user._id
+    });
+    
+    const existingRequest = await PaymentRequest.findOne({
+      auction: auctionId,
+      user: req.user._id
+    });
+    
+    console.log('💭 Existing request found:', {
+      found: !!existingRequest,
+      paymentType: existingRequest?.paymentType,
+      status: existingRequest?.verificationStatus,
+      id: existingRequest?._id
     });
     
     if (existingRequest) {
-      return res.status(400).json({ 
-        message: 'Winner payment request already exists',
-        status: existingRequest.verificationStatus
+      // If it's already a winner payment request, return error
+      if (existingRequest.paymentType === 'winner_payment') {
+        console.log('❌ Winner payment request already exists');
+        return res.status(400).json({ 
+          message: 'Winner payment request already exists',
+          status: existingRequest.verificationStatus
+        });
+      }
+      
+      // If it's a participation fee, update it to winner payment
+      console.log('📝 Updating existing participation fee request to winner payment');
+      
+      // Calculate the correct amount for reserve auctions
+      let actualPaymentAmount = parseFloat(winningAmount);
+      if (auction.auctionType === 'reserve') {
+        // Frontend already calculated the additional amount (winningBid - minimumPrice)
+        // So we don't need to subtract minimumPrice again
+        actualPaymentAmount = parseFloat(winningAmount);
+        console.log('💰 Reserve auction payment amount calculation:', {
+          winningAmountFromFrontend: parseFloat(winningAmount),
+          note: 'Frontend already calculated additional amount, no further calculation needed',
+          actualPaymentAmount: actualPaymentAmount
+        });
+      }
+      
+      existingRequest.paymentType = 'winner_payment';
+      existingRequest.paymentAmount = actualPaymentAmount;
+      existingRequest.paymentMethod = paymentMethod;
+      existingRequest.transactionId = transactionId;
+      existingRequest.paymentDate = new Date(paymentDate);
+      existingRequest.paymentScreenshot = req.file.path;
+      existingRequest.verificationStatus = 'pending';
+      existingRequest.submittedAt = new Date();
+      existingRequest.verifiedAt = null;
+      existingRequest.adminNotes = null;
+      
+      try {
+        await existingRequest.save();
+        console.log('✅ Successfully updated existing payment request');
+        
+        return res.status(200).json({
+          message: 'Winner payment request updated successfully',
+          paymentRequest: existingRequest
+        });
+      } catch (updateError) {
+        console.error('❌ Error updating existing payment request:', updateError);
+        return res.status(500).json({ 
+          message: 'Error updating payment request',
+          error: updateError.message
+        });
+      }
+    }
+    
+    // Create winner payment request (only if no existing request found)
+    console.log('🆕 Creating new winner payment request');
+    
+    // Calculate the correct amount for reserve auctions
+    let actualPaymentAmount = parseFloat(winningAmount);
+    if (auction.auctionType === 'reserve') {
+      // Frontend already calculated the additional amount (winningBid - minimumPrice)
+      // So we don't need to subtract minimumPrice again
+      actualPaymentAmount = parseFloat(winningAmount);
+      console.log('💰 New reserve auction payment amount calculation:', {
+        winningAmountFromFrontend: parseFloat(winningAmount),
+        note: 'Frontend already calculated additional amount, no further calculation needed',
+        actualPaymentAmount: actualPaymentAmount
       });
     }
     
-    // Create winner payment request
     const paymentRequest = new PaymentRequest({
       auction: auctionId,
       user: req.user._id,
-      paymentAmount: parseFloat(winningAmount),
+      paymentAmount: actualPaymentAmount,
       paymentMethod: paymentMethod || 'UPI',
       paymentScreenshot: req.file.path, // Cloudinary URL
       transactionId: transactionId || '',
@@ -370,8 +501,17 @@ router.post('/submit-winner-payment', auth, upload.single('paymentScreenshot'), 
       verificationStatus: 'pending',
       paymentType: 'winner_payment' // New field to distinguish winner payments
     });
-    
-    await paymentRequest.save();
+
+    try {
+      await paymentRequest.save();
+      console.log('✅ Successfully created new winner payment request');
+    } catch (saveError) {
+      console.error('❌ Error creating new payment request:', saveError);
+      return res.status(500).json({ 
+        message: 'Error creating payment request',
+        error: saveError.message
+      });
+    }
     
     // Populate user and auction details for response
     await paymentRequest.populate('user', 'fullName email');
@@ -397,28 +537,69 @@ router.get('/winner-payment-status/:auctionId', auth, async (req, res) => {
   try {
     const { auctionId } = req.params;
     
-    const paymentRequest = await PaymentRequest.findOne({
-      auction: auctionId,
-      user: req.user._id,
-      paymentType: 'winner_payment'
-    }).populate('auction', 'title auctionId');
-    
-    if (!paymentRequest) {
-      return res.json({
-        hasPayment: false,
-        message: 'No winner payment request found for this auction'
-      });
+    // First check if user is the auction creator
+    const auction = await Auction.findById(auctionId);
+    if (!auction) {
+      return res.status(404).json({ message: 'Auction not found' });
     }
     
-    res.json({
-      hasPayment: true,
-      paymentRequest: {
-        status: paymentRequest.verificationStatus,
-        submittedAt: paymentRequest.createdAt,
-        verifiedAt: paymentRequest.verifiedAt,
-        adminNotes: paymentRequest.adminNotes
+    const isAuctionCreator = auction.createdBy.toString() === req.user._id.toString();
+    
+    if (isAuctionCreator) {
+      // For auction creators, find the winner payment for their auction
+      const winnerPayment = await PaymentRequest.findOne({
+        auction: auctionId,
+        paymentType: 'winner_payment'
+      }).populate('user', 'fullName email')
+        .populate('auction', 'title auctionId currency');
+      
+      if (!winnerPayment) {
+        return res.json({
+          hasPayment: false,
+          isAuctionCreator: true,
+          message: 'No winner has submitted payment for this auction yet'
+        });
       }
-    });
+      
+      return res.json({
+        hasPayment: true,
+        isAuctionCreator: true,
+        winnerPayment: {
+          status: winnerPayment.verificationStatus,
+          amount: winnerPayment.paymentAmount,
+          submittedAt: winnerPayment.createdAt,
+          verifiedAt: winnerPayment.verifiedAt,
+          adminNotes: winnerPayment.adminNotes,
+          winnerName: winnerPayment.user?.fullName
+        }
+      });
+    } else {
+      // For regular users, check their own payment
+      const paymentRequest = await PaymentRequest.findOne({
+        auction: auctionId,
+        user: req.user._id,
+        paymentType: 'winner_payment'
+      }).populate('auction', 'title auctionId');
+      
+      if (!paymentRequest) {
+        return res.json({
+          hasPayment: false,
+          isAuctionCreator: false,
+          message: 'No winner payment request found for this auction'
+        });
+      }
+      
+      res.json({
+        hasPayment: true,
+        isAuctionCreator: false,
+        paymentRequest: {
+          status: paymentRequest.verificationStatus,
+          submittedAt: paymentRequest.createdAt,
+          verifiedAt: paymentRequest.verifiedAt,
+          adminNotes: paymentRequest.adminNotes
+        }
+      });
+    }
     
   } catch (error) {
     console.error('Error checking winner payment status:', error);

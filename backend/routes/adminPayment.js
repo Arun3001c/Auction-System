@@ -11,11 +11,13 @@ router.get('/payment-requests', auth, adminAuth, async (req, res) => {
     const { status = 'all', paymentType = 'all', page = 1, limit = 20 } = req.query;
     const skip = (page - 1) * limit;
     
+    console.log('Admin Payment Requests Query:', { status, paymentType, page, limit });
+    
     let filter = {};
     if (status !== 'all') {
       filter.verificationStatus = status;
     }
-    
+
     // Add payment type filtering
     if (paymentType !== 'all') {
       if (paymentType === 'winner_payment') {
@@ -28,15 +30,13 @@ router.get('/payment-requests', auth, adminAuth, async (req, res) => {
       }
     }
     
+    console.log('MongoDB Filter:', filter);
+    
     // Sort by priority: winner payments first, then by creation date
-    const sortCriteria = [
-      { 
-        paymentType: -1 // winner_payment comes before participation_fee alphabetically 
-      },
-      { 
-        createdAt: -1 
-      }
-    ];
+    const sortCriteria = {
+      paymentType: -1, // winner_payment comes before participation_fee alphabetically 
+      createdAt: -1 
+    };
     
     const paymentRequests = await PaymentRequest.find(filter)
       .populate('user', 'fullName email phone')
@@ -52,6 +52,11 @@ router.get('/payment-requests', auth, adminAuth, async (req, res) => {
       .sort(sortCriteria)
       .skip(skip)
       .limit(parseInt(limit));
+    
+    console.log(`Found ${paymentRequests.length} payment requests`);
+    paymentRequests.forEach((req, index) => {
+      console.log(`${index + 1}. ${req.user?.fullName} - ${req.auction?.title} - Type: ${req.paymentType || 'participation_fee'} - Status: ${req.verificationStatus}`);
+    });
     
     const total = await PaymentRequest.countDocuments(filter);
     
