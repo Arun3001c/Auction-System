@@ -253,6 +253,15 @@ const AdminHandleAuctions = () => {
       return;
     }
     
+    // Convert Windows-style path separators to URL-style and construct full URL
+    const normalizedPath = screenshotUrl.replace(/\\/g, '/');
+    const fullImageUrl = normalizedPath.startsWith('http') 
+      ? normalizedPath 
+      : `http://localhost:5001/${normalizedPath}`;
+    
+    console.log('Original screenshot URL:', screenshotUrl);
+    console.log('Full image URL:', fullImageUrl);
+    
     // Open payment screenshot in a new window with enhanced formatting
     const screenshotWindow = window.open('', '_blank', 'width=1000,height=700,scrollbars=yes');
     screenshotWindow.document.write(`
@@ -433,11 +442,11 @@ const AdminHandleAuctions = () => {
           <div class="screenshot-container">
             <div class="screenshot-wrapper">
               <img 
-                src="${screenshotUrl}" 
+                src="${fullImageUrl}" 
                 alt="Payment Screenshot" 
                 class="screenshot-image"
                 onclick="this.style.transform = this.style.transform === 'scale(1.5)' ? 'scale(1)' : 'scale(1.5)'"
-                onerror="this.parentElement.innerHTML = '<div class=\\"error-message\\">❌ Unable to load payment screenshot. The image may be corrupted or the URL is invalid.</div>'"
+                onerror="this.parentElement.innerHTML = '<div class=\\"error-message\\">❌ Unable to load payment screenshot.<br/>URL: ${fullImageUrl}<br/>The image may be corrupted or the server may be offline.</div>'"
               />
             </div>
             
@@ -445,7 +454,7 @@ const AdminHandleAuctions = () => {
               💡 Click on the image to zoom in/out
             </div>
             
-            <button class="download-button" onclick="window.open('${screenshotUrl}', '_blank')">
+            <button class="download-button" onclick="window.open('${fullImageUrl}', '_blank')">
               📥 Download Screenshot
             </button>
           </div>
@@ -460,6 +469,11 @@ const AdminHandleAuctions = () => {
             
             // Auto-focus for better accessibility
             window.focus();
+            
+            // Debug logging
+            console.log('Screenshot viewer initialized');
+            console.log('Original URL: ${screenshotUrl}');
+            console.log('Full URL: ${fullImageUrl}');
           </script>
         </body>
       </html>

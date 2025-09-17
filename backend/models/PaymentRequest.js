@@ -47,6 +47,13 @@ const paymentRequestSchema = new mongoose.Schema({
     required: true
   },
   
+  // Type of payment: participation fee or winner payment
+  paymentType: {
+    type: String,
+    enum: ['participation_fee', 'winner_payment'],
+    default: 'participation_fee'
+  },
+  
   // Admin verification
   verificationStatus: {
     type: String,
@@ -81,13 +88,16 @@ const paymentRequestSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Compound index to ensure one payment request per user per auction
-paymentRequestSchema.index({ auction: 1, user: 1 }, { unique: true });
+// Compound index to ensure one payment request per user per auction per payment type
+paymentRequestSchema.index({ auction: 1, user: 1, paymentType: 1 }, { unique: true });
 
 // Index for admin to quickly find pending requests
 paymentRequestSchema.index({ verificationStatus: 1, createdAt: -1 });
 
 // Index for auction-specific payment requests
 paymentRequestSchema.index({ auction: 1, verificationStatus: 1 });
+
+// Index for payment type filtering
+paymentRequestSchema.index({ paymentType: 1, verificationStatus: 1 });
 
 module.exports = mongoose.model('PaymentRequest', paymentRequestSchema);

@@ -1542,102 +1542,320 @@ const PaymentModal = ({ isOpen, onClose, auctionId }) => {
 
           {/* Step 3: Payment Status */}
           {step === 3 && paymentStatus && (
-            <div className="space-y-6">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               {/* Status Card */}
-              <div className={`rounded-xl p-8 text-center status-card-bounce ${getStatusBackground(paymentStatus.status)}`}>
-                <div className="flex justify-center mb-6">
-                  <div className={`rounded-full p-4 ${getStatusIconBackground(paymentStatus.status)}`}>
-                    {getStatusIconLarge(paymentStatus.status)}
-                  </div>
-                </div>
+              <div style={{
+                background: paymentStatus.status === 'approved' 
+                  ? 'linear-gradient(135deg, #e8f5e8, #f0fff0, #e0ffe0)'
+                  : paymentStatus.status === 'rejected'
+                  ? 'linear-gradient(135deg, #fee2e2, #fef2f2, #fde8e8)'
+                  : 'linear-gradient(135deg, #fff8e1, #fffef7, #fff9c4)',
+                border: paymentStatus.status === 'approved' 
+                  ? '3px solid #4caf50'
+                  : paymentStatus.status === 'rejected'
+                  ? '3px solid #f44336'
+                  : '3px solid #ff9800',
+                borderRadius: '24px',
+                padding: '40px',
+                textAlign: 'center',
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                {/* Background decoration */}
+                <div style={{
+                  position: 'absolute',
+                  top: '-30px',
+                  right: '-30px',
+                  width: '120px',
+                  height: '120px',
+                  background: paymentStatus.status === 'approved' 
+                    ? 'linear-gradient(45deg, rgba(76, 175, 80, 0.1), rgba(129, 199, 132, 0.1))'
+                    : paymentStatus.status === 'rejected'
+                    ? 'linear-gradient(45deg, rgba(244, 67, 54, 0.1), rgba(239, 83, 80, 0.1))'
+                    : 'linear-gradient(45deg, rgba(255, 152, 0, 0.1), rgba(255, 193, 7, 0.1))',
+                  borderRadius: '50%',
+                  zIndex: 0
+                }}></div>
                 
-                <h3 className={`text-2xl font-bold mb-3 ${getStatusTextColor(paymentStatus.status)}`}>
-                  {getStatusTitle(paymentStatus.status)}
-                </h3>
-                
-                <p className={`text-lg mb-6 ${getStatusSubtextColor(paymentStatus.status)}`}>
-                  {getStatusMessage(paymentStatus.status)}
-                </p>
-
-                {/* Status Details */}
-                <div className="bg-white bg-opacity-80 rounded-lg p-6 space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4 text-left">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600 font-medium">Submitted:</span>
-                      <span className="font-bold text-gray-800">
-                        {new Date(paymentStatus.submittedAt).toLocaleDateString('en-IN', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                  {/* Status Icon */}
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+                    <div style={{
+                      background: paymentStatus.status === 'approved' 
+                        ? 'linear-gradient(135deg, #4caf50, #66bb6a)'
+                        : paymentStatus.status === 'rejected'
+                        ? 'linear-gradient(135deg, #f44336, #e57373)'
+                        : 'linear-gradient(135deg, #ff9800, #ffb74d)',
+                      borderRadius: '50%',
+                      padding: '20px',
+                      boxShadow: '0 16px 32px rgba(0, 0, 0, 0.2)'
+                    }}>
+                      <span style={{ fontSize: '48px' }}>
+                        {paymentStatus.status === 'approved' ? '✅' : 
+                         paymentStatus.status === 'rejected' ? '❌' : '⏳'}
                       </span>
                     </div>
-                    
-                    {paymentStatus.verifiedAt && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600 font-medium">Verified:</span>
-                        <span className="font-bold text-gray-800">
-                          {new Date(paymentStatus.verifiedAt).toLocaleDateString('en-IN', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
+                  </div>
+                  
+                  {/* Status Title */}
+                  <h3 style={{
+                    fontSize: '2rem',
+                    fontWeight: 'bold',
+                    marginBottom: '16px',
+                    color: paymentStatus.status === 'approved' 
+                      ? '#2e7d32'
+                      : paymentStatus.status === 'rejected'
+                      ? '#c62828'
+                      : '#e65100',
+                    textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                  }}>
+                    {paymentStatus.status === 'approved' ? '🎉 Payment Approved!' :
+                     paymentStatus.status === 'rejected' ? '❌ Payment Rejected' :
+                     '⏳ Payment Under Review'}
+                  </h3>
+                  
+                  {/* Status Message */}
+                  <p style={{
+                    fontSize: '1.25rem',
+                    marginBottom: '32px',
+                    color: paymentStatus.status === 'approved' 
+                      ? '#388e3c'
+                      : paymentStatus.status === 'rejected'
+                      ? '#d32f2f'
+                      : '#f57c00',
+                    fontWeight: '500'
+                  }}>
+                    {paymentStatus.status === 'approved' 
+                      ? 'Congratulations! Your payment has been verified and approved.'
+                      : paymentStatus.status === 'rejected'
+                      ? 'Your payment was not approved. Please check the admin notes below and resubmit if needed.'
+                      : 'Your payment is currently being verified by our admin team. You will be notified once the verification is complete.'}
+                  </p>
+
+                  {/* Status Details */}
+                  <div style={{
+                    background: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '16px',
+                    padding: '24px',
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+                    backdropFilter: 'blur(10px)'
+                  }}>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                      gap: '20px',
+                      textAlign: 'left'
+                    }}>
+                      {/* Submitted Date */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '12px 16px',
+                        background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
+                        borderRadius: '12px',
+                        border: '1px solid #e2e8f0'
+                      }}>
+                        <span style={{
+                          color: '#64748b',
+                          fontWeight: '600',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}>
+                          📅 Submitted:
                         </span>
+                        <span style={{
+                          fontWeight: 'bold',
+                          color: '#1e293b',
+                          fontSize: '0.9rem'
+                        }}>
+                          {paymentStatus.submittedAt && !isNaN(new Date(paymentStatus.submittedAt)) 
+                            ? new Date(paymentStatus.submittedAt).toLocaleDateString('en-IN', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })
+                            : 'Date not available'}
+                        </span>
+                      </div>
+                      
+                      {/* Verified Date (if available) */}
+                      {paymentStatus.verifiedAt && !isNaN(new Date(paymentStatus.verifiedAt)) && (
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '12px 16px',
+                          background: 'linear-gradient(135deg, #f0fdf4, #ecfdf5)',
+                          borderRadius: '12px',
+                          border: '1px solid #bbf7d0'
+                        }}>
+                          <span style={{
+                            color: '#16a34a',
+                            fontWeight: '600',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}>
+                            ✅ Verified:
+                          </span>
+                          <span style={{
+                            fontWeight: 'bold',
+                            color: '#15803d',
+                            fontSize: '0.9rem'
+                          }}>
+                            {new Date(paymentStatus.verifiedAt).toLocaleDateString('en-IN', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Admin Notes */}
+                    {paymentStatus.adminNotes && (
+                      <div style={{
+                        marginTop: '20px',
+                        padding: '20px',
+                        background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
+                        borderRadius: '12px',
+                        borderLeft: '4px solid #3b82f6',
+                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.1)'
+                      }}>
+                        <h4 style={{
+                          fontWeight: 'bold',
+                          color: '#1e40af',
+                          marginBottom: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          fontSize: '1.1rem'
+                        }}>
+                          💬 Admin Message
+                        </h4>
+                        <p style={{
+                          color: '#374151',
+                          fontStyle: 'italic',
+                          fontSize: '1rem',
+                          lineHeight: '1.5',
+                          margin: 0
+                        }}>
+                          "{paymentStatus.adminNotes}"
+                        </p>
                       </div>
                     )}
                   </div>
 
-                  {paymentStatus.adminNotes && (
-                    <div className="mt-4 p-4 bg-gray-50 rounded-lg border-l-4 border-blue-400">
-                      <h4 className="font-bold text-gray-700 mb-2 flex items-center gap-2">
-                        💬 Admin Message
-                      </h4>
-                      <p className="text-gray-700 italic">"{paymentStatus.adminNotes}"</p>
-                    </div>
-                  )}
+                  {/* Action Messages */}
+                  <div style={{ marginTop: '32px' }}>
+                    {paymentStatus.status === 'approved' && (
+                      <div style={{
+                        background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)',
+                        border: '2px solid #22c55e',
+                        borderRadius: '16px',
+                        padding: '20px',
+                        marginBottom: '16px'
+                      }}>
+                        <p style={{
+                          color: '#15803d',
+                          fontWeight: '600',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          fontSize: '1.1rem',
+                          margin: 0
+                        }}>
+                          🎯 You can now participate in the auction!
+                        </p>
+                      </div>
+                    )}
+
+                    {paymentStatus.status === 'pending' && (
+                      <div style={{
+                        background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+                        border: '2px solid #f59e0b',
+                        borderRadius: '16px',
+                        padding: '20px',
+                        marginBottom: '16px'
+                      }}>
+                        <p style={{
+                          color: '#92400e',
+                          fontWeight: '600',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          fontSize: '1.1rem',
+                          margin: 0
+                        }}>
+                          ⏳ Please wait for admin verification
+                        </p>
+                      </div>
+                    )}
+
+                    {paymentStatus.status === 'rejected' && (
+                      <div style={{
+                        background: 'linear-gradient(135deg, #fecaca, #fca5a5)',
+                        border: '2px solid #ef4444',
+                        borderRadius: '16px',
+                        padding: '20px',
+                        marginBottom: '16px'
+                      }}>
+                        <p style={{
+                          color: '#991b1b',
+                          fontWeight: '600',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          fontSize: '1.1rem',
+                          margin: 0
+                        }}>
+                          🔄 You can submit a new payment
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-
-                {/* Action based on status */}
-                {paymentStatus.status === 'approved' && (
-                  <div className="mt-6">
-                    <div className="bg-green-100 border border-green-300 rounded-lg p-4 mb-4">
-                      <p className="text-green-800 font-medium flex items-center justify-center gap-2">
-                        🎯 You can now participate in the auction!
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {paymentStatus.status === 'pending' && (
-                  <div className="mt-6">
-                    <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4 mb-4">
-                      <p className="text-yellow-800 font-medium flex items-center justify-center gap-2">
-                        ⏳ Please wait for admin verification
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {paymentStatus.status === 'rejected' && (
-                  <div className="mt-6">
-                    <div className="bg-red-100 border border-red-300 rounded-lg p-4 mb-4">
-                      <p className="text-red-800 font-medium flex items-center justify-center gap-2">
-                        🔄 You can submit a new payment
-                      </p>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Close Button */}
-              <div className="text-center">
+              <div style={{ textAlign: 'center' }}>
                 <button
                   onClick={onClose}
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-3 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 font-bold shadow-lg"
+                  style={{
+                    background: 'linear-gradient(135deg, #3b82f6, #8b5cf6, #6366f1)',
+                    color: 'white',
+                    padding: '16px 32px',
+                    borderRadius: '16px',
+                    border: 'none',
+                    fontSize: '1.1rem',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    boxShadow: '0 12px 32px rgba(59, 130, 246, 0.4)',
+                    transition: 'all 0.3s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    margin: '0 auto'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 16px 40px rgba(59, 130, 246, 0.5)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 12px 32px rgba(59, 130, 246, 0.4)';
+                  }}
                 >
                   Close & Continue 🚀
                 </button>

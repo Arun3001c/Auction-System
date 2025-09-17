@@ -115,7 +115,7 @@ const getCurrencyInfo = (currency) => currencyLocaleMap[currency] || { locale: '
         </div> */}
 
         <div className="auction-stats">
-          <div className="stat-item">
+          <div className="stat-item current-bid-item">
             <span className="stat-label">
               {/* <DollarSign className="stat-icon" size={14} /> */}
               Current Bid
@@ -123,7 +123,7 @@ const getCurrencyInfo = (currency) => currencyLocaleMap[currency] || { locale: '
             <span className="stat-value price">{formatPrice(auction.currentBid)}</span>
           </div>
 
-          <div className="stat-item">
+          <div className="stat-item time-left-item">
             <span className="stat-label">
               <Clock className="stat-icon" size={14} />
               Time Left
@@ -131,7 +131,7 @@ const getCurrencyInfo = (currency) => currencyLocaleMap[currency] || { locale: '
             <span className="stat-value">{formatTimeLeft(auction)}</span>
           </div>
 
-          <div className="stat-item full-width">
+          <div className="stat-item full-width participation-code-item">
             <span className="stat-label">
               <Hash className="stat-icon" size={14} />
               Participation Code

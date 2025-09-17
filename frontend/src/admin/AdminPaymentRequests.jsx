@@ -9,13 +9,21 @@ const AdminPaymentRequests = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showImageModal, setShowImageModal] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState('winner_payment'); // Default to winner payments
   const [searchTerm, setSearchTerm] = useState('');
-  const [counts, setCounts] = useState({ pending: 0, approved: 0, rejected: 0, total: 0 });
+  const [counts, setCounts] = useState({ 
+    pending: 0, 
+    approved: 0, 
+    rejected: 0, 
+    total: 0,
+    winner_payments: 0,
+    participation_fees: 0 
+  });
   const [pagination, setPagination] = useState({ current: 1, total: 1, limit: 20 });
 
   useEffect(() => {
     fetchPaymentRequests();
-  }, [filter]);
+  }, [filter, paymentTypeFilter]);
 
   const fetchPaymentRequests = async (page = 1) => {
     try {
@@ -25,6 +33,7 @@ const AdminPaymentRequests = () => {
         headers: { Authorization: `Bearer ${token}` },
         params: {
           status: filter,
+          paymentType: paymentTypeFilter,
           page,
           limit: 20
         }
@@ -101,11 +110,21 @@ const AdminPaymentRequests = () => {
 
   const getStatusBadge = (status) => {
     const configs = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      approved: 'bg-green-100 text-green-800',
-      rejected: 'bg-red-100 text-red-800'
+      pending: 'status-badge pending',
+      approved: 'status-badge approved',
+      rejected: 'status-badge rejected'
     };
-    return `px-2 py-1 rounded-full text-xs font-medium ${configs[status]}`;
+    return configs[status];
+  };
+
+  const getPaymentTypeDisplay = (paymentType) => {
+    switch (paymentType) {
+      case 'winner_payment':
+        return { text: '🏆 Winner Payment', classes: 'winner-payment' };
+      case 'participation_fee':
+      default:
+        return { text: '🎯 Participation Fee', classes: 'participation-fee' };
+    }
   };
 
   const filteredRequests = paymentRequests.filter(request => {
@@ -117,132 +136,187 @@ const AdminPaymentRequests = () => {
   });
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-lg">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Payment Requests</h2>
+    <div className="admin-users-page payment-requests">
+      <div className="payment-header">
+        <h2>💳 Payment Management</h2>
+        <p>Monitor and manage all auction payments and transactions</p>
         
         {/* Status Counts */}
-        <div className="flex space-x-4">
-          <div className="text-center">
-            <div className="text-lg font-bold text-yellow-600">{counts.pending}</div>
-            <div className="text-xs text-gray-600">Pending</div>
+        <div className="payment-stats">
+          <div className="stat-item pending">
+            <div className="stat-number">{counts.pending}</div>
+            <div className="stat-label">Pending</div>
           </div>
-          <div className="text-center">
-            <div className="text-lg font-bold text-green-600">{counts.approved}</div>
-            <div className="text-xs text-gray-600">Approved</div>
+          <div className="stat-item approved">
+            <div className="stat-number">{counts.approved}</div>
+            <div className="stat-label">Approved</div>
           </div>
-          <div className="text-center">
-            <div className="text-lg font-bold text-red-600">{counts.rejected}</div>
-            <div className="text-xs text-gray-600">Rejected</div>
+          <div className="stat-item rejected">
+            <div className="stat-number">{counts.rejected}</div>
+            <div className="stat-label">Rejected</div>
+          </div>
+          <div className="stat-item winner-payments">
+            <div className="stat-number">{counts.winner_payments || 0}</div>
+            <div className="stat-label">🏆 Winner Payments</div>
+          </div>
+          <div className="stat-item participation-fees">
+            <div className="stat-number">{counts.participation_fees || 0}</div>
+            <div className="stat-label">🎯 Participation Fees</div>
           </div>
         </div>
       </div>
 
       {/* Filters and Search */}
-      <div className="flex space-x-4 mb-6">
-        <div className="flex items-center space-x-2">
-          <Filter className="w-4 h-4 text-gray-500" />
+      <div className="payment-filters">
+        <div className="filter-group">
+          <label>Filter by Status:</label>
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="filter-select"
           >
-            <option value="all">All Requests</option>
+            <option value="all">All Statuses</option>
             <option value="pending">Pending</option>
             <option value="approved">Approved</option>
             <option value="rejected">Rejected</option>
           </select>
         </div>
 
-        <div className="flex items-center space-x-2 flex-1">
-          <Search className="w-4 h-4 text-gray-500" />
+        <div className="filter-group">
+          <label>Filter by Payment Type:</label>
+          <select
+            value={paymentTypeFilter}
+            onChange={(e) => setPaymentTypeFilter(e.target.value)}
+            className="filter-select"
+          >
+            <option value="winner_payment">🏆 Winner Payments Only</option>
+            <option value="participation_fee">🎯 Participation Fees Only</option>
+            <option value="all">All Payment Types</option>
+          </select>
+        </div>
+
+        <div className="search-group">
           <input
             type="text"
             placeholder="Search by user name, auction title, or transaction ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="search-input"
           />
         </div>
       </div>
 
       {/* Payment Requests Table */}
       {loading ? (
-        <div className="flex justify-center items-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="loading-spinner">
+          <div className="spinner"></div>
+          <p>Loading payment requests...</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border border-gray-200 rounded-lg">
-            <thead className="bg-gray-50">
+        <div className="payments-table-container">
+          <table className="user-table payments-table">
+            <thead>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Auction</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Method</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th>Bidder (Payer)</th>
+                <th>Auctioneer (Seller)</th>
+                <th>Auction</th>
+                <th>Payment Type</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody>
               {filteredRequests.map((request) => (
-                <tr key={request._id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <div>
-                      <div className="font-medium text-gray-900">{request.user.fullName}</div>
-                      <div className="text-sm text-gray-500">{request.user.email}</div>
+                <tr key={request._id}>
+                  <td>
+                    <div className="user-info">
+                      <div className="user-name">👤 {request.user.fullName}</div>
+                      <div className="user-email">📧 {request.user.email}</div>
+                      {request.user.phone && (
+                        <div className="user-phone">📱 {request.user.phone}</div>
+                      )}
                     </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <div>
-                      <div className="font-medium text-gray-900">{request.auction.title}</div>
-                      <div className="text-sm text-gray-500">{request.auction.auctionId}</div>
+                  <td>
+                    <div className="seller-info">
+                      {request.auction.seller ? (
+                        <>
+                          <div className="seller-name">🏪 {request.auction.seller.fullName}</div>
+                          <div className="seller-email">📧 {request.auction.seller.email}</div>
+                          {request.auction.seller.phone && (
+                            <div className="seller-phone">📱 {request.auction.seller.phone}</div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="seller-unknown">Seller info not available</div>
+                      )}
                     </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{request.paymentAmount} {request.auction.currency}</div>
+                  <td>
+                    <div className="auction-info">
+                      <div className="auction-title">{request.auction.title}</div>
+                      <div className="auction-id">{request.auction.auctionId}</div>
+                      <div className="auction-type">Type: {request.auction.auctionType}</div>
+                    </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <span className="text-sm">{request.paymentMethod}</span>
+                  <td>
+                    <span className={`payment-type-badge ${
+                      getPaymentTypeDisplay(request.paymentType || 'participation_fee').classes
+                    }`}>
+                      {getPaymentTypeDisplay(request.paymentType || 'participation_fee').text}
+                    </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td>
+                    <div className="payment-amount">{request.paymentAmount} {request.auction.currency}</div>
+                  </td>
+                  <td>
+                    <span className="payment-method">{request.paymentMethod}</span>
+                  </td>
+                  <td>
                     <span className={getStatusBadge(request.verificationStatus)}>
                       {request.verificationStatus}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="text-sm text-gray-900">
-                      {new Date(request.paymentDate).toLocaleDateString()}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Submitted: {new Date(request.createdAt).toLocaleDateString()}
+                  <td>
+                    <div className="date-info">
+                      <div className="payment-date">
+                        {new Date(request.paymentDate).toLocaleDateString()}
+                      </div>
+                      <div className="submitted-date">
+                        Submitted: {new Date(request.createdAt).toLocaleDateString()}
+                      </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex space-x-2">
+                  <td>
+                    <div className="payment-actions">
                       <button
                         onClick={() => viewDetails(request._id)}
-                        className="p-1 text-blue-600 hover:text-blue-800"
+                        className="action-btn view-btn"
                         title="View Details"
                       >
-                        <Eye className="w-4 h-4" />
+                        <Eye className="action-icon" />
+                        View
                       </button>
                       {request.verificationStatus === 'pending' && (
                         <>
                           <button
                             onClick={() => handleApprove(request._id)}
-                            className="p-1 text-green-600 hover:text-green-800"
+                            className="action-btn approve-btn"
                             title="Approve"
                           >
-                            <Check className="w-4 h-4" />
+                            <Check className="action-icon" />
+                            Approve
                           </button>
                           <button
                             onClick={() => handleReject(request._id)}
-                            className="p-1 text-red-600 hover:text-red-800"
+                            className="action-btn reject-btn"
                             title="Reject"
                           >
-                            <X className="w-4 h-4" />
+                            <X className="action-icon" />
+                            Reject
                           </button>
                         </>
                       )}
@@ -254,9 +328,9 @@ const AdminPaymentRequests = () => {
           </table>
 
           {filteredRequests.length === 0 && (
-            <div className="text-center py-8">
-              <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No payment requests found</p>
+            <div className="no-requests-message">
+              <Clock className="no-requests-icon" />
+              <p>No payment requests found</p>
             </div>
           )}
         </div>
@@ -264,86 +338,132 @@ const AdminPaymentRequests = () => {
 
       {/* Payment Request Detail Modal */}
       {selectedRequest && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center p-6 border-b">
-              <h3 className="text-xl font-bold text-gray-900">Payment Request Details</h3>
+        <div className="modal-overlay">
+          <div className="payment-detail-modal">
+            <div className="modal-header">
+              <h3>Payment Request Details</h3>
               <button
                 onClick={() => setSelectedRequest(null)}
-                className="text-gray-400 hover:text-gray-600"
+                className="close-btn"
               >
-                <X className="w-6 h-6" />
+                <X className="close-icon" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-600">User</label>
-                  <p className="font-medium">{selectedRequest.user.fullName}</p>
-                  <p className="text-sm text-gray-500">{selectedRequest.user.email}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Auction</label>
-                  <p className="font-medium">{selectedRequest.auction.title}</p>
-                  <p className="text-sm text-gray-500">{selectedRequest.auction.auctionId}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Payment Amount</label>
-                  <p className="font-medium">{selectedRequest.paymentAmount} {selectedRequest.auction.currency}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Payment Method</label>
-                  <p className="font-medium">{selectedRequest.paymentMethod}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Transaction ID</label>
-                  <p className="font-medium">{selectedRequest.transactionId || 'Not provided'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Payment Date</label>
-                  <p className="font-medium">{new Date(selectedRequest.paymentDate).toLocaleDateString()}</p>
+            <div className="modal-content">
+              {/* Transaction Parties Section */}
+              <div className="transaction-parties">
+                <h4 style={{ marginBottom: '1rem', color: '#374151', fontSize: '1.2rem' }}>Transaction Parties</h4>
+                <div className="parties-grid">
+                  <div className="party-details bidder-details">
+                    <div className="party-header">
+                      <h5 style={{ color: '#059669', marginBottom: '0.5rem' }}>👤 Bidder (Payer)</h5>
+                    </div>
+                    <div className="party-info">
+                      <p className="detail-value">{selectedRequest.user.fullName}</p>
+                      <p className="detail-subtext">📧 {selectedRequest.user.email}</p>
+                      {selectedRequest.user.phone && (
+                        <p className="detail-subtext">📱 {selectedRequest.user.phone}</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="party-details seller-details">
+                    <div className="party-header">
+                      <h5 style={{ color: '#dc2626', marginBottom: '0.5rem' }}>🏪 Auctioneer (Seller)</h5>
+                    </div>
+                    <div className="party-info">
+                      {selectedRequest.auction.seller ? (
+                        <>
+                          <p className="detail-value">{selectedRequest.auction.seller.fullName}</p>
+                          <p className="detail-subtext">📧 {selectedRequest.auction.seller.email}</p>
+                          {selectedRequest.auction.seller.phone && (
+                            <p className="detail-subtext">📱 {selectedRequest.auction.seller.phone}</p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="detail-subtext">Seller information not available</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-600">Payment Screenshot</label>
-                <div className="mt-2">
+              {/* Payment Details Section */}
+              <div className="payment-details-section">
+                <h4 style={{ marginBottom: '1rem', color: '#374151', fontSize: '1.2rem' }}>Payment Details</h4>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <label className="detail-label">Auction</label>
+                    <p className="detail-value">{selectedRequest.auction.title}</p>
+                    <p className="detail-subtext">{selectedRequest.auction.auctionId}</p>
+                    <p className="detail-subtext">Type: {selectedRequest.auction.auctionType}</p>
+                  </div>
+                  <div className="detail-item">
+                    <label className="detail-label">Payment Amount</label>
+                    <p className="detail-value">{selectedRequest.paymentAmount} {selectedRequest.auction.currency}</p>
+                  </div>
+                  <div className="detail-item">
+                    <label className="detail-label">Payment Type</label>
+                    <span className={`payment-type-badge ${
+                      getPaymentTypeDisplay(selectedRequest.paymentType || 'participation_fee').classes
+                    }`}>
+                      {getPaymentTypeDisplay(selectedRequest.paymentType || 'participation_fee').text}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <label className="detail-label">Payment Method</label>
+                    <p className="detail-value">{selectedRequest.paymentMethod}</p>
+                  </div>
+                  <div className="detail-item">
+                    <label className="detail-label">Transaction ID</label>
+                    <p className="detail-value">{selectedRequest.transactionId || 'Not provided'}</p>
+                  </div>
+                  <div className="detail-item">
+                    <label className="detail-label">Payment Date</label>
+                    <p className="detail-value">{new Date(selectedRequest.paymentDate).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="screenshot-section">
+                <label className="detail-label">Payment Screenshot</label>
+                <div className="screenshot-container">
                   <img
                     src={selectedRequest.paymentScreenshot}
                     alt="Payment Screenshot"
-                    className="max-w-full h-auto rounded-lg border cursor-pointer"
+                    className="payment-screenshot"
                     onClick={() => setShowImageModal(true)}
                   />
-                  <p className="text-xs text-gray-500 mt-1">Click to view full size</p>
+                  <p className="screenshot-hint">Click to view full size</p>
                 </div>
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-600">Status</label>
-                <span className={`ml-2 ${getStatusBadge(selectedRequest.verificationStatus)}`}>
+              <div className="status-section">
+                <label className="detail-label">Status</label>
+                <span className={getStatusBadge(selectedRequest.verificationStatus)}>
                   {selectedRequest.verificationStatus}
                 </span>
               </div>
 
               {selectedRequest.adminNotes && (
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Admin Notes</label>
-                  <p className="bg-gray-50 p-2 rounded mt-1">{selectedRequest.adminNotes}</p>
+                <div className="admin-notes-section">
+                  <label className="detail-label">Admin Notes</label>
+                  <p className="admin-notes">{selectedRequest.adminNotes}</p>
                 </div>
               )}
 
               {selectedRequest.verificationStatus === 'pending' && (
-                <div className="flex space-x-4 pt-4">
+                <div className="modal-actions">
                   <button
                     onClick={() => handleApprove(selectedRequest._id)}
-                    className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
+                    className="action-btn approve-btn-full"
                   >
                     Approve Payment
                   </button>
                   <button
                     onClick={() => handleReject(selectedRequest._id)}
-                    className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors"
+                    className="action-btn reject-btn-full"
                   >
                     Reject Payment
                   </button>
@@ -356,18 +476,18 @@ const AdminPaymentRequests = () => {
 
       {/* Image Modal */}
       {showImageModal && selectedRequest && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-60 p-4">
-          <div className="relative max-w-4xl max-h-full">
+        <div className="image-modal-overlay">
+          <div className="image-modal-container">
             <button
               onClick={() => setShowImageModal(false)}
-              className="absolute top-4 right-4 text-white hover:text-gray-300"
+              className="image-close-btn"
             >
-              <X className="w-8 h-8" />
+              <X className="close-icon-large" />
             </button>
             <img
               src={selectedRequest.paymentScreenshot}
               alt="Payment Screenshot"
-              className="max-w-full max-h-full object-contain"
+              className="full-image"
             />
           </div>
         </div>

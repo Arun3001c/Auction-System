@@ -27,6 +27,18 @@ const AuctionBidPage = () => {
       const isCreator = user._id === auction.seller?._id || user._id === auction.seller;
       setIsAuctionCreator(isCreator);
       
+      // Debug logging for reserve auction features
+      if (process.env.NODE_ENV === 'development') {
+        console.log('AuctionBidPage Debug:', {
+          auctionType: auction.auctionType,
+          auctionStatus: auction.status,
+          isAuctionCreator: isCreator,
+          userId: user._id,
+          sellerId: auction.seller?._id || auction.seller,
+          showAdminButtons: auction.auctionType === 'reserve' && isCreator && (auction.status === 'ended' || auction.status === 'stopped')
+        });
+      }
+      
       if (isCreator) {
         // If user is auction creator, fetch all bids for this auction
         fetchAllAuctionBids();
@@ -263,6 +275,94 @@ const AuctionBidPage = () => {
                         {auction.reservedAmount && (
                           <div style={{marginTop: '1rem', color: '#0ea5e9', fontWeight: 600, textAlign: 'center', padding: '0.75rem', background: '#e0f2fe', borderRadius: '8px'}}>
                             Reserved Amount: {formatPrice(auction.reservedAmount)}
+                          </div>
+                        )}
+                        
+                        {/* Admin Approval and Contact Admin buttons for reserve auctions - ONLY WHEN AUCTION ENDS */}
+                        {(auction.status === 'ended' || auction.status === 'stopped') && (
+                          <div style={{marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                            <button 
+                              className="see-admin-approval-btn"
+                              style={{
+                                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                                color: 'white',
+                                border: 'none',
+                                padding: '0.75rem 1.5rem',
+                                borderRadius: '12px',
+                                fontWeight: '600',
+                                fontSize: '1rem',
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
+                                transition: 'all 0.3s ease',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.5rem'
+                              }}
+                              onClick={() => {
+                                // Navigate to admin approval page or show modal
+                                window.open('/admin/handle-auctions', '_blank');
+                              }}
+                              onMouseOver={(e) => {
+                                e.target.style.transform = 'translateY(-2px)';
+                                e.target.style.boxShadow = '0 6px 16px rgba(99, 102, 241, 0.4)';
+                              }}
+                              onMouseOut={(e) => {
+                                e.target.style.transform = 'translateY(0)';
+                                e.target.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.3)';
+                              }}
+                            >
+                              🔍 See Admin Approval Status
+                            </button>
+                            
+                            <button 
+                              className="contact-admin-btn"
+                              style={{
+                                background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                                color: 'white',
+                                border: 'none',
+                                padding: '0.75rem 1.5rem',
+                                borderRadius: '12px',
+                                fontWeight: '600',
+                                fontSize: '1rem',
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
+                                transition: 'all 0.3s ease',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.5rem'
+                              }}
+                              onClick={() => {
+                                const subject = `Reserve Auction Support - ${auction.title}`;
+                                const body = `Dear Admin,
+
+I need assistance with my reserve auction "${auction.title}" (ID: ${auction._id || auction.auctionId}).
+
+Current Details:
+- Auction Type: Reserve
+- Total Bids: ${allAuctionBids.length}
+- Highest Bid: ${allAuctionBids.length > 0 ? formatPrice(allAuctionBids[0].amount) : 'No bids yet'}
+- Reserved Amount: ${auction.reservedAmount ? formatPrice(auction.reservedAmount) : 'Not set'}
+
+Please contact me regarding the approval process and next steps.
+
+Best regards,
+${user?.fullName || user?.username || 'Auction Creator'}`;
+
+                                window.location.href = `mailto:admin@auctionsite.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                              }}
+                              onMouseOver={(e) => {
+                                e.target.style.transform = 'translateY(-2px)';
+                                e.target.style.boxShadow = '0 6px 16px rgba(5, 150, 105, 0.4)';
+                              }}
+                              onMouseOut={(e) => {
+                                e.target.style.transform = 'translateY(0)';
+                                e.target.style.boxShadow = '0 4px 12px rgba(5, 150, 105, 0.3)';
+                              }}
+                            >
+                              📧 Contact Admin
+                            </button>
                           </div>
                         )}
                       </div>

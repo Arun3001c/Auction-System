@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import WinnerPaymentModal from './WinnerPaymentModal';
 
 const Confetti = ({trigger}) => {
   const canvasRef = useRef(null);
@@ -66,10 +67,29 @@ const Confetti = ({trigger}) => {
 
 const WinnerCard = ({ auction, winner, user }) => {
   const navigate = useNavigate();
-  const bidder = winner?.bidder || {};
+  
+  // Handle different data structures:
+  // 1. winner from auction.bids (bid object with bidder field)
+  // 2. winner from Winner collection (winner object with user field)
+  const bidder = winner?.bidder || winner?.user || winner || {};
   const avatar = bidder.profileImage || bidder.profileImg || bidder.avatar || 'https://res.cloudinary.com/dhjbphutc/image/upload/v1755457818/no-image-found_kgenoc.png';
-  const bidderId = bidder._id || bidder.id || bidder || null;
+  
+  // Get IDs for comparison - handle different field names
+  let bidderId = null;
+  if (winner?.bidder) {
+    // This is a bid object, bidder could be ID or populated object
+    bidderId = winner.bidder._id || winner.bidder.id || winner.bidder;
+  } else if (winner?.user) {
+    // This is a Winner object, user could be ID or populated object
+    bidderId = winner.user._id || winner.user.id || winner.user;
+  } else if (winner?._id) {
+    // Winner object might have user data directly embedded
+    bidderId = winner._id;
+  }
+  
   const sellerId = auction?.seller?._id || auction?.seller || null;
+  
+  // User role checks
   const isWinner = Boolean(user && bidderId && String(user._id) === String(bidderId));
   const isSeller = Boolean(user && sellerId && String(user._id) === String(sellerId));
   
@@ -78,6 +98,7 @@ const WinnerCard = ({ auction, winner, user }) => {
   const winnerCanContactSeller = Boolean(isWinner);
   const showOnlyProfile = !(sellerCanContactBidder || winnerCanContactSeller);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [showWinnerPaymentModal, setShowWinnerPaymentModal] = useState(false);
 
   // Debug logging for development
   if (process.env.NODE_ENV === 'development') {
@@ -87,11 +108,27 @@ const WinnerCard = ({ auction, winner, user }) => {
       sellerId,
       isWinner,
       isSeller,
+      auctionType: auction?.auctionType,
+      auctionStatus: auction?.status,
       sellerCanContactBidder,
       winnerCanContactSeller,
       showOnlyProfile,
-      bidderEmail: bidder?.email,
-      sellerEmail: auction?.seller?.email
+      bidderData: bidder,
+      winnerData: winner,
+      winnerStructure: {
+        hasBidder: !!winner?.bidder,
+        hasUser: !!winner?.user,
+        hasId: !!winner?._id,
+        bidderType: typeof winner?.bidder,
+        userType: typeof winner?.user
+      },
+      bidderEmail: bidder?.email || winner?.email,
+      sellerEmail: auction?.seller?.email,
+      buttonType: isSeller 
+        ? (auction?.auctionType === 'reserve' ? 'Admin Buttons' : 'Contact Bidder')
+        : isWinner 
+          ? (auction?.auctionType === 'reserve' ? 'Pay Full Amount' : 'Contact Seller')
+          : 'No Buttons (Just Animation)'
     });
   }
 
@@ -202,7 +239,7 @@ const WinnerCard = ({ auction, winner, user }) => {
               textAlign: 'center'
             }}
           >
-            {bidder.fullName || bidder.name || 'Anonymous'}
+            {bidder.fullName || bidder.name || winner?.fullName || winner?.name || bidder.username || winner?.username || 'Anonymous'}
           </h3>
           
           <div 
@@ -253,27 +290,110 @@ const WinnerCard = ({ auction, winner, user }) => {
           )}
 
           {/* Contact Buttons Section */}
-          {sellerCanContactBidder && bidder?.email ? (
-            <button 
-              className="contact-bidder-btn"
-              style={{
-                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                color: 'white',
-                border: 'none',
-                padding: '1rem 2.5rem',
-                borderRadius: '15px',
-                fontWeight: '700',
-                fontSize: '1.1rem',
-                cursor: 'pointer',
-                boxShadow: '0 8px 25px rgba(59, 130, 246, 0.3)',
-                letterSpacing: '0.03em',
-                textTransform: 'uppercase',
-                marginTop: '1rem',
-                transition: 'all 0.3s ease'
-              }}
-              onClick={() => {
-                const subject = `Regarding Your Winning Bid - ${auction.title}`;
-                const body = `Dear ${bidder.fullName || bidder.username || 'Winner'},
+          {sellerCanContactBidder && (bidder?.email || winner?.email) ? (
+            // Seller view - show admin buttons for reserve auctions
+            auction?.auctionType === 'reserve' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+                <button 
+                  className="see-admin-approval-btn"
+                  style={{
+                    background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '1rem 2.5rem',
+                    borderRadius: '15px',
+                    fontWeight: '700',
+                    fontSize: '1.1rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 8px 25px rgba(99, 102, 241, 0.3)',
+                    letterSpacing: '0.03em',
+                    textTransform: 'uppercase',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onClick={() => {
+                    // Navigate to admin approval page
+                    window.open('/admin/handle-auctions', '_blank');
+                  }}
+                  onMouseOver={(e) => {
+                    e.target.style.transform = 'translateY(-3px)';
+                    e.target.style.boxShadow = '0 12px 30px rgba(99, 102, 241, 0.4)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 8px 25px rgba(99, 102, 241, 0.3)';
+                  }}
+                >
+                  🔍 See Admin Approval Status
+                </button>
+                
+                <button 
+                  className="contact-admin-btn"
+                  style={{
+                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '1rem 2.5rem',
+                    borderRadius: '15px',
+                    fontWeight: '700',
+                    fontSize: '1.1rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 8px 25px rgba(5, 150, 105, 0.3)',
+                    letterSpacing: '0.03em',
+                    textTransform: 'uppercase',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onClick={() => {
+                    const subject = `Reserve Auction Completed - ${auction.title}`;
+                    const body = `Dear Admin,
+
+My reserve auction "${auction.title}" has ended successfully.
+
+Winner Details:
+- Winner: ${bidder.fullName || bidder.username || 'Winner'}
+- Winning Bid: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: auction?.currency || 'USD' }).format(winner?.amount || 0)}
+- Auction ID: ${auction._id || auction.auctionId}
+
+Please assist with the final payment processing and transaction completion.
+
+Best regards,
+${auction.seller?.fullName || auction.seller?.username || 'Auction Seller'}`;
+
+                    window.location.href = `mailto:admin@auctionsite.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                  }}
+                  onMouseOver={(e) => {
+                    e.target.style.transform = 'translateY(-3px)';
+                    e.target.style.boxShadow = '0 12px 30px rgba(5, 150, 105, 0.4)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 8px 25px rgba(5, 150, 105, 0.3)';
+                  }}
+                >
+                  � Contact Admin
+                </button>
+              </div>
+            ) : (
+              // Regular auction - show contact bidder button
+              <button 
+                className="contact-bidder-btn"
+                style={{
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '1rem 2.5rem',
+                  borderRadius: '15px',
+                  fontWeight: '700',
+                  fontSize: '1.1rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 25px rgba(59, 130, 246, 0.3)',
+                  letterSpacing: '0.03em',
+                  textTransform: 'uppercase',
+                  marginTop: '1rem',
+                  transition: 'all 0.3s ease'
+                }}
+                onClick={() => {
+                  const subject = `Regarding Your Winning Bid - ${auction.title}`;
+                  const body = `Dear ${bidder.fullName || bidder.username || winner?.fullName || 'Winner'},
 
 Congratulations on winning the auction for "${auction.title}" with your bid of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: auction?.currency || 'USD' }).format(winner?.amount || 0)}.
 
@@ -282,40 +402,74 @@ Please contact me to discuss the next steps for completing this transaction.
 Best regards,
 ${auction.seller?.fullName || auction.seller?.username || 'Auction Seller'}`;
 
-                window.location.href = `mailto:${bidder.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-              }}
-              onMouseOver={(e) => {
-                e.target.style.transform = 'translateY(-3px)';
-                e.target.style.boxShadow = '0 12px 30px rgba(59, 130, 246, 0.4)';
-              }}
-              onMouseOut={(e) => {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = '0 8px 25px rgba(59, 130, 246, 0.3)';
-              }}
-            >
-              Contact Bidder
-            </button>
+                  window.location.href = `mailto:${bidder.email || winner?.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.transform = 'translateY(-3px)';
+                  e.target.style.boxShadow = '0 12px 30px rgba(59, 130, 246, 0.4)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 8px 25px rgba(59, 130, 246, 0.3)';
+                }}
+              >
+                Contact Bidder
+              </button>
+            )
           ) : winnerCanContactSeller && auction?.seller?.email ? (
-            <button 
-              className="contact-seller-btn"
-              style={{
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                color: 'white',
-                border: 'none',
-                padding: '1rem 2.5rem',
-                borderRadius: '15px',
-                fontWeight: '700',
-                fontSize: '1.1rem',
-                cursor: 'pointer',
-                boxShadow: '0 8px 25px rgba(16, 185, 129, 0.3)',
-                letterSpacing: '0.03em',
-                textTransform: 'uppercase',
-                marginTop: '1rem',
-                transition: 'all 0.3s ease'
-              }}
-              onClick={() => {
-                const subject = `Congratulations - I Won Your Auction: ${auction.title}`;
-                const body = `Dear ${auction.seller?.fullName || auction.seller?.username || 'Seller'},
+            // Winner view - show pay full amount for reserve auctions
+            auction?.auctionType === 'reserve' ? (
+              <button 
+                className="pay-full-amount-btn"
+                style={{
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '1rem 2.5rem',
+                  borderRadius: '15px',
+                  fontWeight: '700',
+                  fontSize: '1.1rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 25px rgba(245, 158, 11, 0.3)',
+                  letterSpacing: '0.03em',
+                  textTransform: 'uppercase',
+                  marginTop: '1rem',
+                  transition: 'all 0.3s ease'
+                }}
+                onClick={() => setShowWinnerPaymentModal(true)}
+                onMouseOver={(e) => {
+                  e.target.style.transform = 'translateY(-3px)';
+                  e.target.style.boxShadow = '0 12px 30px rgba(245, 158, 11, 0.4)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 8px 25px rgba(245, 158, 11, 0.3)';
+                }}
+              >
+                💰 Pay Full Amount
+              </button>
+            ) : (
+              // Regular auction - show contact seller
+              <button 
+                className="contact-seller-btn"
+                style={{
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '1rem 2.5rem',
+                  borderRadius: '15px',
+                  fontWeight: '700',
+                  fontSize: '1.1rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 25px rgba(16, 185, 129, 0.3)',
+                  letterSpacing: '0.03em',
+                  textTransform: 'uppercase',
+                  marginTop: '1rem',
+                  transition: 'all 0.3s ease'
+                }}
+                onClick={() => {
+                  const subject = `Congratulations - I Won Your Auction: ${auction.title}`;
+                  const body = `Dear ${auction.seller?.fullName || auction.seller?.username || 'Seller'},
 
 I am writing regarding the auction "${auction.title}" that I won with a bid of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: auction?.currency || 'USD' }).format(winner?.amount || 0)}.
 
@@ -324,22 +478,31 @@ Please contact me to discuss payment and delivery arrangements.
 Best regards,
 ${user?.fullName || user?.username || 'Auction Winner'}`;
 
-                window.location.href = `mailto:${auction.seller.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-              }}
-              onMouseOver={(e) => {
-                e.target.style.transform = 'translateY(-3px)';
-                e.target.style.boxShadow = '0 12px 30px rgba(16, 185, 129, 0.4)';
-              }}
-              onMouseOut={(e) => {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = '0 8px 25px rgba(16, 185, 129, 0.3)';
-              }}
-            >
-              Contact Seller
-            </button>
+                  window.location.href = `mailto:${auction.seller.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.transform = 'translateY(-3px)';
+                  e.target.style.boxShadow = '0 12px 30px rgba(16, 185, 129, 0.4)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 8px 25px rgba(16, 185, 129, 0.3)';
+                }}
+              >
+                Contact Seller
+              </button>
+            )
           ) : null}
         </div>
       </div>
+
+      {/* Winner Payment Modal */}
+      <WinnerPaymentModal
+        isOpen={showWinnerPaymentModal}
+        onClose={() => setShowWinnerPaymentModal(false)}
+        auction={auction}
+        winner={winner}
+      />
     </div>
   );
 };

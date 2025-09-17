@@ -8,7 +8,7 @@ const router = express.Router();
 // Get all payment requests for admin review
 router.get('/payment-requests', auth, adminAuth, async (req, res) => {
   try {
-    const { status = 'all', page = 1, limit = 20 } = req.query;
+    const { status = 'all', paymentType = 'all', page = 1, limit = 20 } = req.query;
     const skip = (page - 1) * limit;
     
     let filter = {};
@@ -16,11 +16,40 @@ router.get('/payment-requests', auth, adminAuth, async (req, res) => {
       filter.verificationStatus = status;
     }
     
+    // Add payment type filtering
+    if (paymentType !== 'all') {
+      if (paymentType === 'winner_payment') {
+        filter.paymentType = 'winner_payment';
+      } else if (paymentType === 'participation_fee') {
+        filter.$or = [
+          { paymentType: 'participation_fee' },
+          { paymentType: { $exists: false } }
+        ];
+      }
+    }
+    
+    // Sort by priority: winner payments first, then by creation date
+    const sortCriteria = [
+      { 
+        paymentType: -1 // winner_payment comes before participation_fee alphabetically 
+      },
+      { 
+        createdAt: -1 
+      }
+    ];
+    
     const paymentRequests = await PaymentRequest.find(filter)
       .populate('user', 'fullName email phone')
-      .populate('auction', 'title auctionId auctionType startingPrice currency')
+      .populate({
+        path: 'auction',
+        select: 'title auctionId auctionType startingPrice currency seller',
+        populate: {
+          path: 'seller',
+          select: 'fullName email phone'
+        }
+      })
       .populate('verifiedBy', 'fullName email')
-      .sort({ createdAt: -1 })
+      .sort(sortCriteria)
       .skip(skip)
       .limit(parseInt(limit));
     
@@ -31,15 +60,37 @@ router.get('/payment-requests', auth, adminAuth, async (req, res) => {
       { $group: { _id: '$verificationStatus', count: { $sum: 1 } } }
     ]);
     
+    // Get counts for different payment types
+    const paymentTypeCounts = await PaymentRequest.aggregate([
+      { 
+        $group: { 
+          _id: {
+            $ifNull: ['$paymentType', 'participation_fee']
+          }, 
+          count: { $sum: 1 } 
+        } 
+      }
+    ]);
+    
     const counts = {
       pending: 0,
       approved: 0,
       rejected: 0,
-      total: total
+      total: total,
+      winner_payments: 0,
+      participation_fees: 0
     };
     
     statusCounts.forEach(item => {
       counts[item._id] = item.count;
+    });
+    
+    paymentTypeCounts.forEach(item => {
+      if (item._id === 'winner_payment') {
+        counts.winner_payments = item.count;
+      } else {
+        counts.participation_fees = item.count;
+      }
     });
     
     res.json({
@@ -192,7 +243,14 @@ router.get('/payment-requests/:id', auth, adminAuth, async (req, res) => {
     
     const paymentRequest = await PaymentRequest.findById(id)
       .populate('user', 'fullName email phone')
-      .populate('auction', 'title auctionId auctionType startingPrice currency')
+      .populate({
+        path: 'auction',
+        select: 'title auctionId auctionType startingPrice currency seller',
+        populate: {
+          path: 'seller',
+          select: 'fullName email phone'
+        }
+      })
       .populate('verifiedBy', 'fullName email');
     
     if (!paymentRequest) {

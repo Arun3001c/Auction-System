@@ -22,7 +22,7 @@ import {
 import AdminHandleUsers from "./AdminHandleUsers";
 import AdminHandleAuctions from "./AdminHandleAuctions";
 import AdminHandleCrownScore from "./AdminHandleCrownScore";
-import AdminPaymentDetails from "./AdminPaymentDetails";
+import AdminPaymentRequests from "./AdminPaymentRequests";
 
 import "./admin.css";
 
@@ -332,7 +332,7 @@ const AdminDashboard = () => {
         {active === "users" && <AdminHandleUsers />}
         {active === "auctions" && <AdminHandleAuctions />}
         {active === "crown" && <AdminHandleCrownScore />}
-        {active === "payment" && <AdminPaymentDetails />}
+        {active === "payment" && <AdminPaymentRequests />}
       </main>
     </div>
   );
