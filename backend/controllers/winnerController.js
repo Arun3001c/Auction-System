@@ -5,9 +5,17 @@ const { sendWinnerNotificationEmail } = require('../utils/email');
 exports.getWinnerNotifications = async (req, res) => {
   try {
     const userId = req.user._id;
-    const winners = await Winner.find({ user: userId }).populate('auction');
+    const winners = await Winner.find({ user: userId })
+      .populate({
+        path: 'auction',
+        populate: {
+          path: 'seller',
+          select: 'fullName email phoneNumber'
+        }
+      });
     res.json(winners);
   } catch (error) {
+    console.error('Error fetching winner notifications:', error);
     res.status(500).json({ message: 'Server error fetching winner notifications' });
   }
 };

@@ -10,6 +10,8 @@ const AuctionEndedDetails = () => {
   const [auction, setAuction] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [paymentStatus, setPaymentStatus] = useState(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   useEffect(() => {
     const fetchAuction = async () => {
@@ -19,6 +21,11 @@ const AuctionEndedDetails = () => {
         const token = localStorage.getItem('token');
         const res = await axios.get(`/api/auctions/${id}`);
         setAuction(res.data);
+        
+        // If it's a reserve auction, check payment status
+        if (res.data.auctionType === 'reserve') {
+          await checkPaymentStatus(res.data._id, token);
+        }
       } catch (err) {
         setError('Failed to load auction details');
       } finally {
@@ -27,6 +34,30 @@ const AuctionEndedDetails = () => {
     };
     fetchAuction();
   }, [id]);
+
+  const checkPaymentStatus = async (auctionId, token) => {
+    try {
+      setPaymentLoading(true);
+      const response = await axios.get(
+        `http://localhost:5001/api/payments/winner-payment-status/${auctionId}`,
+        {
+          headers: { Authorization: `Bearer ${token || localStorage.getItem('token')}` }
+        }
+      );
+      
+      if (response.data && response.data.isAuctionCreator) {
+        setPaymentStatus({
+          approved: response.data.hasPayment && response.data.winnerPayment?.status === 'approved',
+          status: response.data.hasPayment ? response.data.winnerPayment?.status : 'none'
+        });
+      }
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+      setPaymentStatus({ approved: false, status: 'error' });
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
@@ -163,39 +194,65 @@ const AuctionEndedDetails = () => {
                 
                 {/* Show Contact Admin for reserve auctions */}
                 {auction.auctionType === 'reserve' && (
-                  <button 
-                    className="contact-admin-btn"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '10px 16px',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      background: 'linear-gradient(135deg, #007bff, #0056b3)',
-                      color: 'white',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onClick={() => {
-                      const auctionTitle = auction.title || 'Reserve Auction';
-                      window.location.href = `mailto:admin@auctionsite.com?subject=Reserve Auction Completed - ${auctionTitle}&body=Hello Admin, My reserve auction "${auctionTitle}" has ended with a winning bid of $${auction.currentBid}. Please assist with the transaction process. Auction ID: ${auction._id}`;
-                    }}
-                    onMouseOver={(e) => {
-                      e.target.style.transform = 'translateY(-2px)';
-                      e.target.style.boxShadow = '0 4px 12px rgba(0, 123, 255, 0.3)';
-                    }}
-                    onMouseOut={(e) => {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = 'none';
-                    }}
-                    title="Contact Admin for Reserve Auction Support"
-                  >
-                    <Mail style={{ width: '16px', height: '16px' }} />
-                    Contact Admin
-                  </button>
+                  <>
+                    <button 
+                      className="contact-admin-btn"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '10px 16px',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        background: 'linear-gradient(135deg, #007bff, #0056b3)',
+                        color: 'white',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onClick={() => {
+                        const auctionTitle = auction.title || 'Reserve Auction';
+                        window.location.href = `mailto:admin@auctionsite.com?subject=Reserve Auction Completed - ${auctionTitle}&body=Hello Admin, My reserve auction "${auctionTitle}" has ended with a winning bid of $${auction.currentBid}. Please assist with the transaction process. Auction ID: ${auction._id}`;
+                      }}
+                      onMouseOver={(e) => {
+                        e.target.style.transform = 'translateY(-2px)';
+                        e.target.style.boxShadow = '0 4px 12px rgba(0, 123, 255, 0.3)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.target.style.transform = 'translateY(0)';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                      title="Contact Admin for Reserve Auction Support"
+                    >
+                      <Mail style={{ width: '16px', height: '16px' }} />
+                      Contact Admin
+                    </button>
+                    
+                    {/* Payment Status Indicator for Reserve Auctions */}
+                    {paymentStatus && (
+                      <div style={{
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        backgroundColor: paymentStatus.approved ? '#d4edda' : 
+                                         paymentStatus.status === 'pending' ? '#fff3cd' : '#f8d7da',
+                        color: paymentStatus.approved ? '#155724' : 
+                               paymentStatus.status === 'pending' ? '#856404' : '#721c24',
+                        border: `1px solid ${paymentStatus.approved ? '#c3e6cb' : 
+                                paymentStatus.status === 'pending' ? '#ffeaa7' : '#f5c6cb'}`
+                      }}>
+                        {paymentStatus.approved ? '✅ Payment Approved' : 
+                         paymentStatus.status === 'pending' ? '⏳ Payment Pending' :
+                         paymentStatus.status === 'rejected' ? '❌ Payment Rejected' :
+                         '📝 No Payment Yet'}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
               
@@ -239,12 +296,23 @@ const AuctionEndedDetails = () => {
                     </div>
                   )}
                   
-                  {/* Phone from multiple possible sources */}
+                  {/* Phone from multiple possible sources - only show for non-reserve or approved reserve auctions */}
                   {(auction.currentHighestBidder?.phone || auction.bids?.[0]?.bidder?.phone) ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <Phone style={{ width: '16px', height: '16px', color: '#6c757d' }} />
                       <span>
-                        <strong>Phone:</strong> {auction.currentHighestBidder?.phone || auction.bids?.[0]?.bidder?.phone}
+                        <strong>Phone:</strong>{' '}
+                        {/* Show phone number only if it's not a reserve auction OR if payment is approved */}
+                        {auction.auctionType !== 'reserve' || paymentStatus?.approved ? (
+                          auction.currentHighestBidder?.phone || auction.bids?.[0]?.bidder?.phone
+                        ) : (
+                          <span style={{ color: '#d97706', fontStyle: 'italic' }}>
+                            {paymentLoading ? 'Checking payment status...' : 
+                             paymentStatus?.status === 'pending' ? 'Hidden - Payment pending approval' :
+                             paymentStatus?.status === 'rejected' ? 'Hidden - Payment rejected' :
+                             'Hidden - Payment not submitted yet'}
+                          </span>
+                        )}
                       </span>
                     </div>
                   ) : (

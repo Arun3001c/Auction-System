@@ -543,7 +543,7 @@ router.get('/winner-payment-status/:auctionId', auth, async (req, res) => {
       return res.status(404).json({ message: 'Auction not found' });
     }
     
-    const isAuctionCreator = auction.createdBy.toString() === req.user._id.toString();
+    const isAuctionCreator = auction.seller.toString() === req.user._id.toString();
     
     if (isAuctionCreator) {
       // For auction creators, find the winner payment for their auction

@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../utils/AuthContext';
 import api from '../utils/api';
-import { Trophy, X, Mail, Phone, DollarSign } from 'lucide-react';
+import { Trophy, X, Mail, Phone, DollarSign, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 
 const WinnerNotifications = ({ show, onClose, forceRefresh }) => {
   const { user } = useAuth();
   const [winners, setWinners] = useState([]);
   const [loading, setLoading] = useState(false);
+  
+  // Payment status modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [selectedWinner, setSelectedWinner] = useState(null);
+  
+  // Store payment statuses for each winner
+  const [winnerPaymentStatuses, setWinnerPaymentStatuses] = useState({});
 
   useEffect(() => {
     if (show && user) {
@@ -18,15 +27,102 @@ const WinnerNotifications = ({ show, onClose, forceRefresh }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      console.log('Fetching winner notifications with token:', token ? 'Present' : 'Missing');
+      
       const response = await api.get('/auctions/user/winner-notifications', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setWinners(response.data || []);
+      
+      console.log('Winner notifications API response:', response.data);
+      const winnersData = response.data || [];
+      console.log('Winners data length:', winnersData.length);
+      setWinners(winnersData);
+      
+      // Fetch payment status for each reserve auction winner
+      const statusPromises = winnersData
+        .filter(winner => winner.auction?.auctionType === 'reserve')
+        .map(async (winner) => {
+          try {
+            const paymentResponse = await api.get(
+              `/payments/winner-payment-status/${winner.auction._id}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            return {
+              auctionId: winner.auction._id,
+              approved: paymentResponse.data.hasPayment && paymentResponse.data.paymentRequest?.status === 'approved'
+            };
+          } catch (error) {
+            console.error('Error fetching payment status for auction:', winner.auction._id, error);
+            return { auctionId: winner.auction._id, approved: false };
+          }
+        });
+      
+      const statuses = await Promise.all(statusPromises);
+      const statusMap = {};
+      statuses.forEach(status => {
+        statusMap[status.auctionId] = status.approved;
+      });
+      setWinnerPaymentStatuses(statusMap);
+      
     } catch (error) {
       console.error('Error fetching winner notifications:', error);
       setWinners([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Function to check payment status for reserve auctions
+  const checkPaymentStatus = async (winner) => {
+    try {
+      setPaymentLoading(true);
+      setSelectedWinner(winner);
+      
+      const token = localStorage.getItem('token');
+      const response = await api.get(
+        `/payments/winner-payment-status/${winner.auction._id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      
+      console.log('Payment status response:', response.data);
+      
+      if (response.data && !response.data.isAuctionCreator) {
+        // For winners (not auction creators)
+        setPaymentStatus({
+          isWinner: true,
+          hasPayment: response.data.hasPayment,
+          paymentRequest: response.data.hasPayment ? response.data.paymentRequest : null,
+          message: response.data.message || null
+        });
+      } else {
+        setPaymentStatus({
+          isWinner: true,
+          hasPayment: false,
+          message: 'No payment information found for this auction.'
+        });
+      }
+      
+      setShowPaymentModal(true);
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+      setPaymentStatus({
+        error: true,
+        message: 'Failed to load payment status. Please try again.'
+      });
+      setShowPaymentModal(true);
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  // Function to close payment modal and refresh statuses
+  const closePaymentModal = () => {
+    setShowPaymentModal(false);
+    // Refresh payment statuses to update phone number visibility
+    if (selectedWinner && selectedWinner.auction?.auctionType === 'reserve') {
+      fetchWinnerNotifications();
     }
   };
 
@@ -85,13 +181,91 @@ const WinnerNotifications = ({ show, onClose, forceRefresh }) => {
                 
                 <div className="winner-detail-item">
                   <Mail className="winner-detail-icon" />
-                  <span>Email: {winner.email}</span>
+                  <span>Your Email: {winner.email}</span>
                 </div>
                 
                 <div className="winner-detail-item">
                   <Phone className="winner-detail-icon" />
-                  <span>Phone: {winner.phone}</span>
+                  <span>Your Phone: {winner.phone}</span>
                 </div>
+                
+                {/* Seller Information Section - Only for Reserve Auctions */}
+                {winner.auction?.auctionType === 'reserve' && (
+                  <div style={{ 
+                    marginTop: '1rem', 
+                    padding: '1rem', 
+                    backgroundColor: '#f0f9ff', 
+                    borderRadius: '8px',
+                    border: '1px solid #e0f2fe'
+                  }}>
+                    <h4 style={{ 
+                      margin: '0 0 0.75rem 0', 
+                      color: '#0369a1', 
+                      fontSize: '1rem',
+                      fontWeight: '600'
+                    }}>
+                      🏪 Seller Contact Information:
+                    </h4>
+                    
+                    <div className="seller-details" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {/* Seller Email - Always show for reserve auctions */}
+                      <div className="winner-detail-item">
+                        <Mail className="winner-detail-icon" />
+                        <span>
+                          <strong>Seller Email:</strong> {winner.auction?.seller?.email || 'Contact admin for seller details'}
+                        </span>
+                      </div>
+                      
+                      {/* Seller Phone - Conditional based on payment approval */}
+                      <div className="winner-detail-item">
+                        <Phone className="winner-detail-icon" />
+                        <span>
+                          <strong>Seller Phone:</strong>{' '}
+                          {winnerPaymentStatuses[winner.auction._id] ? (
+                            winner.auction?.seller?.phoneNumber || 'Not provided'
+                          ) : (
+                            <span style={{ color: '#d97706', fontStyle: 'italic' }}>
+                              Available after payment approval
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Payment Status Button for Reserve Auctions */}
+                    <div style={{ marginTop: '1rem' }}>
+                      <button
+                        onClick={() => checkPaymentStatus(winner)}
+                        disabled={paymentLoading}
+                        style={{
+                          backgroundColor: '#6366f1',
+                          color: 'white',
+                          border: 'none',
+                          padding: '0.75rem 1rem',
+                          borderRadius: '8px',
+                          fontSize: '0.875rem',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <AlertCircle size={16} />
+                        {paymentLoading ? 'Checking...' : 'Check Payment Status'}
+                      </button>
+                      <p style={{ 
+                        fontSize: '0.75rem', 
+                        color: '#6b7280', 
+                        margin: '0.5rem 0 0 0',
+                        fontStyle: 'italic'
+                      }}>
+                        💡 Submit payment to unlock seller's phone number
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="winner-card-actions">
@@ -135,7 +309,8 @@ const WinnerNotifications = ({ show, onClose, forceRefresh }) => {
                       transition: 'all 0.2s ease'
                     }}
                     onClick={() => {
-                      const sellerEmail = winner.auction?.seller?.email || 'seller@example.com';
+                      // Get seller email from multiple possible sources
+                      const sellerEmail = winner.auction?.seller?.email || 'admin@auctionsite.com';
                       const auctionTitle = winner.auction?.title || 'Auction Item';
                       const amount = formatPrice(winner.amount, winner.auction?.currency);
                       window.location.href = `mailto:${sellerEmail}?subject=Auction Won - ${auctionTitle}&body=Hello, I won your auction "${auctionTitle}" with a winning bid of ${amount}. Please contact me to arrange payment and delivery.`;
@@ -190,6 +365,245 @@ const WinnerNotifications = ({ show, onClose, forceRefresh }) => {
           </button>
         </div>
       </div>
+
+      {/* Payment Status Modal */}
+      {showPaymentModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1001
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '2rem',
+            width: '90%',
+            maxWidth: '500px',
+            maxHeight: '80vh',
+            overflowY: 'auto',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '600', color: '#374151' }}>
+                💳 Your Payment Status
+              </h3>
+              <button
+                onClick={() => closePaymentModal()}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: '#6b7280'
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            {selectedWinner && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>
+                  Auction: {selectedWinner.auction?.title}
+                </h4>
+                <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>
+                  Winning Bid: {formatPrice(selectedWinner.amount, selectedWinner.auction?.currency)}
+                </p>
+              </div>
+            )}
+            
+            {paymentLoading ? (
+              <div style={{ textAlign: 'center', padding: '2rem' }}>
+                <div>Loading payment status...</div>
+              </div>
+            ) : paymentStatus?.error ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '2rem',
+                color: '#dc2626',
+                backgroundColor: '#fef2f2',
+                borderRadius: '8px',
+                border: '1px solid #fecaca'
+              }}>
+                <XCircle style={{ width: '2rem', height: '2rem', margin: '0 auto 0.5rem' }} />
+                <p style={{ fontWeight: '600', marginBottom: '0.25rem' }}>Error</p>
+                <p style={{ fontSize: '0.875rem' }}>{paymentStatus.message}</p>
+              </div>
+            ) : paymentStatus?.hasPayment && paymentStatus?.paymentRequest ? (
+              <div style={{
+                backgroundColor: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '1rem',
+                marginBottom: '1rem'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                  {paymentStatus.paymentRequest.status === 'approved' ? (
+                    <CheckCircle style={{ color: '#059669', width: '1.25rem', height: '1.25rem' }} />
+                  ) : paymentStatus.paymentRequest.status === 'rejected' ? (
+                    <XCircle style={{ color: '#dc2626', width: '1.25rem', height: '1.25rem' }} />
+                  ) : (
+                    <AlertCircle style={{ color: '#d97706', width: '1.25rem', height: '1.25rem' }} />
+                  )}
+                  <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600', color: '#374151' }}>
+                    Your Payment Status
+                  </h4>
+                </div>
+                <div style={{ marginLeft: '2rem' }}>
+                  <p style={{
+                    margin: '0.25rem 0',
+                    fontWeight: '600',
+                    fontSize: '1.125rem',
+                    color: paymentStatus.paymentRequest.status === 'approved' ? '#059669' : 
+                           paymentStatus.paymentRequest.status === 'rejected' ? '#dc2626' : '#d97706'
+                  }}>
+                    Status: {paymentStatus.paymentRequest.status?.toUpperCase()}
+                  </p>
+                  {paymentStatus.paymentRequest.submittedAt && (
+                    <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: '#6b7280' }}>
+                      Submitted: {new Date(paymentStatus.paymentRequest.submittedAt).toLocaleDateString()}
+                    </p>
+                  )}
+                  {paymentStatus.paymentRequest.verifiedAt && (
+                    <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: '#6b7280' }}>
+                      Verified: {new Date(paymentStatus.paymentRequest.verifiedAt).toLocaleDateString()}
+                    </p>
+                  )}
+                  {paymentStatus.paymentRequest.adminNotes && (
+                    <p style={{ margin: '0.5rem 0', fontSize: '0.875rem', color: '#374151', fontStyle: 'italic' }}>
+                      Admin Notes: {paymentStatus.paymentRequest.adminNotes}
+                    </p>
+                  )}
+                  
+                  {/* Status-specific messages */}
+                  {paymentStatus.paymentRequest.status === 'approved' && (
+                    <div style={{
+                      marginTop: '1rem',
+                      padding: '1rem',
+                      backgroundColor: '#f0fdf4',
+                      borderRadius: '8px',
+                      border: '1px solid #bbf7d0'
+                    }}>
+                      <h5 style={{ 
+                        margin: '0 0 0.5rem 0', 
+                        color: '#059669', 
+                        fontWeight: '600',
+                        fontSize: '0.9rem'
+                      }}>
+                        🎉 Payment Approved - Seller Contact Info Unlocked:
+                      </h5>
+                      <p style={{ 
+                        margin: '0.5rem 0 0 0',
+                        fontSize: '0.875rem',
+                        color: '#047857',
+                        lineHeight: '1.6'
+                      }}>
+                        ✅ You can now see the seller's phone number above.<br/>
+                        ✅ Contact the seller to arrange item pickup/delivery.<br/>
+                        ✅ Complete the transaction as agreed.
+                      </p>
+                    </div>
+                  )}
+                  
+                  {paymentStatus.paymentRequest.status === 'pending' && (
+                    <div style={{
+                      marginTop: '1rem',
+                      padding: '1rem',
+                      backgroundColor: '#fffbeb',
+                      borderRadius: '8px',
+                      border: '1px solid #fde68a'
+                    }}>
+                      <p style={{ 
+                        margin: 0, 
+                        color: '#d97706', 
+                        fontSize: '0.875rem',
+                        fontWeight: '500'
+                      }}>
+                        ⏳ Your payment is being reviewed by admin. You will be notified once approved.
+                      </p>
+                    </div>
+                  )}
+                  
+                  {paymentStatus.paymentRequest.status === 'rejected' && (
+                    <div style={{
+                      marginTop: '1rem',
+                      padding: '1rem',
+                      backgroundColor: '#fef2f2',
+                      borderRadius: '8px',
+                      border: '1px solid #fecaca'
+                    }}>
+                      <p style={{ 
+                        margin: 0, 
+                        color: '#dc2626', 
+                        fontSize: '0.875rem',
+                        fontWeight: '500'
+                      }}>
+                        ❌ Your payment was rejected. Please contact admin for assistance or resubmit payment.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div style={{
+                textAlign: 'center',
+                padding: '2rem',
+                color: '#6b7280',
+                backgroundColor: '#f9fafb',
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb'
+              }}>
+                <AlertCircle style={{ width: '2rem', height: '2rem', margin: '0 auto 0.5rem' }} />
+                <p style={{ fontWeight: '600', marginBottom: '0.25rem' }}>Payment Not Submitted Yet</p>
+                <p style={{ fontSize: '0.875rem' }}>
+                  {paymentStatus?.message || 'You need to submit your payment to unlock seller contact details.'}
+                </p>
+                <div style={{
+                  marginTop: '1rem',
+                  padding: '1rem',
+                  backgroundColor: '#e0f2fe',
+                  borderRadius: '8px',
+                  border: '1px solid #b3e5fc'
+                }}>
+                  <p style={{ 
+                    margin: 0, 
+                    color: '#0277bd', 
+                    fontSize: '0.875rem',
+                    fontWeight: '500'
+                  }}>
+                    💡 Go to the auction page to submit your winner payment and unlock seller's phone number.
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+              <button
+                onClick={() => closePaymentModal()}
+                style={{
+                  backgroundColor: '#6366f1',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  cursor: 'pointer'
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         .winner-notifications-overlay {
