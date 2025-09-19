@@ -104,15 +104,6 @@
     // Start the auction scheduler
     auctionSchedulerInterval = startAuctionScheduler();
   });
-const path = require("path");
-
-// Serve React frontend
-app.use(express.static(path.join(__dirname, "client/build")));
-
-// Catch-all route: serve index.html
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "client/build", "index.html"));
-});
 
 
   // Graceful shutdown
